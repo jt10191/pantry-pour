@@ -117,7 +117,9 @@ let recipeSourceLabel = "sample";
 let activeFilter = "all";
 let searchTerm = "";
 let editingRecipeId = null;
+let expandedRecipeIds = new Set();
 const renderLimit = 160;
+const instructionPreviewLength = 700;
 
 const ingredientForm = document.querySelector("#ingredientForm");
 const ingredientInput = document.querySelector("#ingredientInput");
@@ -484,6 +486,21 @@ function makeListItems(list, node) {
   });
 }
 
+function instructionPreviewText(text, isExpanded) {
+  if (isExpanded || text.length <= instructionPreviewLength) return text;
+  return `${text.slice(0, instructionPreviewLength).trim()}...`;
+}
+
+function toggleInstructions(recipeId) {
+  expandedRecipeIds = new Set(expandedRecipeIds);
+  if (expandedRecipeIds.has(recipeId)) {
+    expandedRecipeIds.delete(recipeId);
+  } else {
+    expandedRecipeIds.add(recipeId);
+  }
+  render();
+}
+
 function renderIngredientChips() {
   ingredientChips.innerHTML = "";
 
@@ -545,8 +562,13 @@ function renderRecipeCards(matches) {
     const editButton = card.querySelector(".edit-recipe");
     const deleteButton = card.querySelector(".delete-recipe");
     const sourceLink = card.querySelector(".source-link");
+    const steps = card.querySelector(".steps");
+    const instructionsToggle = card.querySelector(".instructions-toggle");
     const progress = card.querySelector(".progress-track span");
     const hasLocalOverride = hasLocalRecipe(recipe.id);
+    const instructionText = recipe.steps || "No steps saved yet.";
+    const isInstructionsExpanded = expandedRecipeIds.has(recipe.id);
+    const canExpandInstructions = instructionText.length > instructionPreviewLength;
 
     if (hasLocalOverride) {
       card.classList.add("custom-recipe");
@@ -559,8 +581,19 @@ function renderRecipeCards(matches) {
 
     card.querySelector(".type-pill").textContent = recipe.type;
     card.querySelector("h3").textContent = recipe.name;
-    card.querySelector(".steps").textContent = recipe.steps || "No steps saved yet.";
+    steps.textContent = instructionPreviewText(instructionText, isInstructionsExpanded);
+    steps.classList.toggle("expanded", isInstructionsExpanded);
     progress.style.width = `${Math.round(recipe.score * 100)}%`;
+
+    if (canExpandInstructions) {
+      instructionsToggle.classList.add("visible");
+      instructionsToggle.textContent = isInstructionsExpanded ? "Show less" : "Show more";
+      instructionsToggle.setAttribute(
+        "aria-label",
+        `${isInstructionsExpanded ? "Collapse" : "Expand"} instructions for ${recipe.name}`
+      );
+      instructionsToggle.addEventListener("click", () => toggleInstructions(recipe.id));
+    }
 
     if (recipe.sourceUrl) {
       card.classList.add("has-source");

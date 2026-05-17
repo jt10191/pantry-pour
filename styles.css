@@ -693,6 +693,30 @@ li {
   line-height: 1.48;
 }
 
+.instructions-toggle {
+  display: none;
+  align-self: flex-start;
+  min-height: 30px;
+  margin-top: 9px;
+  border: 1px solid rgba(214, 173, 100, 0.32);
+  border-radius: 8px;
+  background: rgba(214, 173, 100, 0.1);
+  padding: 0 10px;
+  color: var(--accent-strong);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.instructions-toggle.visible {
+  display: inline-flex;
+  align-items: center;
+}
+
+.instructions-toggle:hover {
+  border-color: var(--accent-strong);
+  background: rgba(214, 173, 100, 0.16);
+}
+
 .source-link {
   display: none;
   width: max-content;
