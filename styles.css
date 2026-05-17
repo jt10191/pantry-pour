@@ -689,6 +689,10 @@ li {
   color: var(--muted);
 }
 
+.result-cap {
+  padding: 22px;
+}
+
 @media (max-width: 980px) {
   .app-shell {
     grid-template-columns: 1fr;

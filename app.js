@@ -116,6 +116,7 @@ let tgbRecipes = [...fallbackRecipes];
 let recipeSourceLabel = "sample";
 let activeFilter = "all";
 let searchTerm = "";
+const renderLimit = 160;
 
 const ingredientForm = document.querySelector("#ingredientForm");
 const ingredientInput = document.querySelector("#ingredientInput");
@@ -312,7 +313,7 @@ function getMatches() {
         need,
         score,
         isReady: need.length === 0,
-        isClose: need.length > 0 && need.length <= 2
+        isClose: have.length > 0 && need.length > 0 && need.length <= 2
       };
     })
     .filter((recipe) => activeFilter === "all" || recipe.type === activeFilter)
@@ -392,7 +393,7 @@ function renderRecipeCards(matches) {
     return;
   }
 
-  matches.forEach((recipe) => {
+  matches.slice(0, renderLimit).forEach((recipe) => {
     const card = recipeCardTemplate.content.firstElementChild.cloneNode(true);
     const matchLabel = card.querySelector(".match-label");
     const deleteButton = card.querySelector(".delete-recipe");
@@ -430,6 +431,16 @@ function renderRecipeCards(matches) {
     makeListItems(recipe.need, card.querySelector(".need-list"));
     recipeGrid.append(card);
   });
+
+  if (matches.length > renderLimit) {
+    const capped = document.createElement("div");
+    capped.className = "empty-state result-cap";
+    capped.innerHTML = `
+      <h3>Showing ${renderLimit} of ${matches.length} matches</h3>
+      <p>Add ingredients or search by name to narrow the full recipe set.</p>
+    `;
+    recipeGrid.append(capped);
+  }
 }
 
 function renderSummary(matches) {
