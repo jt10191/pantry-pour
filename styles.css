@@ -652,21 +652,15 @@ svg {
   background: linear-gradient(90deg, var(--accent), var(--leaf));
 }
 
-.ingredient-lists {
+.ingredient-list {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  margin: 18px 0;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px 16px;
+  margin: 16px 0;
+  padding-left: 18px;
 }
 
-.ingredient-lists h4 {
-  margin: 0 0 7px;
-  color: var(--muted);
-  font-size: 0.75rem;
-  text-transform: uppercase;
-}
-
-ul {
+ul:not(.ingredient-list) {
   margin: 0;
   padding-left: 18px;
 }
@@ -677,8 +671,20 @@ li {
   font-size: 0.9rem;
 }
 
-.need-list:empty::before,
-.have-list:empty::before {
+.ingredient-list li {
+  margin: 0;
+  break-inside: avoid;
+}
+
+.ingredient-have {
+  color: #d9e9b8;
+}
+
+.ingredient-need {
+  color: #d6ad64;
+}
+
+.ingredient-list:empty::before {
   content: "None";
   color: var(--muted);
   font-size: 0.9rem;
@@ -816,7 +822,4 @@ li {
     text-align: left;
   }
 
-  .ingredient-lists {
-    grid-template-columns: 1fr;
-  }
 }

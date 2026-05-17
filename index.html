@@ -90,10 +90,10 @@
             </select>
 
             <label for="recipeIngredients">Ingredients</label>
-            <textarea id="recipeIngredients" rows="5" placeholder="2 oz tequila&#10;1 oz lime juice&#10;1/2 oz orange liqueur"></textarea>
+            <textarea id="recipeIngredients" rows="10" placeholder="2 oz tequila&#10;1 oz lime juice&#10;1/2 oz orange liqueur"></textarea>
 
             <label for="recipeSteps">Steps</label>
-            <textarea id="recipeSteps" rows="3" placeholder="Shake with ice. Strain over fresh ice. Garnish."></textarea>
+            <textarea id="recipeSteps" rows="12" placeholder="Shake with ice. Strain over fresh ice. Garnish."></textarea>
 
             <div class="form-actions">
               <button class="wide-button" id="saveRecipeButton" type="submit">Save Recipe</button>
@@ -192,16 +192,7 @@
         <div class="progress-track">
           <span></span>
         </div>
-        <div class="ingredient-lists">
-          <div>
-            <h4>Have</h4>
-            <ul class="have-list"></ul>
-          </div>
-          <div>
-            <h4>Need</h4>
-            <ul class="need-list"></ul>
-          </div>
-        </div>
+        <ul class="ingredient-list"></ul>
         <a class="source-link" href="#" target="_blank" rel="noreferrer">Instructions</a>
         <p class="steps"></p>
         <button class="instructions-toggle" type="button">Show more</button>

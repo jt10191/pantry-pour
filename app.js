@@ -451,12 +451,17 @@ function getMatches() {
       const have = recipeIngredients.filter((item) => pantry.has(item));
       const need = recipeIngredients.filter((item) => !pantry.has(item));
       const score = recipeIngredients.length ? have.length / recipeIngredients.length : 0;
+      const ingredientDisplay = recipeIngredients.map((item) => ({
+        label: displayByCanonical.get(item) || titleCase(item),
+        status: pantry.has(item) ? "have" : "need"
+      }));
 
       return {
         ...recipe,
         ingredients: recipeIngredients,
         have,
         need,
+        ingredientDisplay,
         haveDisplay: have.map((item) => displayByCanonical.get(item) || titleCase(item)),
         needDisplay: need.map((item) => displayByCanonical.get(item) || titleCase(item)),
         score,
@@ -477,11 +482,12 @@ function getMatches() {
     });
 }
 
-function makeListItems(list, node) {
+function makeIngredientItems(list, node) {
   node.innerHTML = "";
   list.forEach((item) => {
     const li = document.createElement("li");
-    li.textContent = item;
+    li.className = item.status === "have" ? "ingredient-have" : "ingredient-need";
+    li.textContent = item.label;
     node.append(li);
   });
 }
@@ -611,8 +617,7 @@ function renderRecipeCards(matches) {
       matchLabel.textContent = `${recipe.need.length} missing`;
     }
 
-    makeListItems(recipe.haveDisplay, card.querySelector(".have-list"));
-    makeListItems(recipe.needDisplay, card.querySelector(".need-list"));
+    makeIngredientItems(recipe.ingredientDisplay, card.querySelector(".ingredient-list"));
     recipeGrid.append(card);
   });
 
