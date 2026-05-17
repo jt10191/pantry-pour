@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pantry Pour</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Recipe controls">
+        <div class="brand-block">
+          <div class="brand-mark" aria-hidden="true">
+            <span></span>
+            <span></span>
+          </div>
+          <div>
+            <p class="eyebrow">Kitchen matcher</p>
+            <h1>Pantry Pour</h1>
+          </div>
+        </div>
+
+        <section class="panel">
+          <div class="panel-heading">
+            <h2>Your Ingredients</h2>
+            <button class="icon-button" id="clearIngredients" type="button" aria-label="Clear ingredients" title="Clear ingredients">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M3 6h18" />
+                <path d="M8 6v14" />
+                <path d="M16 6v14" />
+                <path d="M10 11v6" />
+                <path d="M14 11v6" />
+                <path d="M5 6l1 16h12l1-16" />
+                <path d="M9 6V3h6v3" />
+              </svg>
+            </button>
+          </div>
+          <form class="ingredient-form" id="ingredientForm">
+            <label for="ingredientInput">Add ingredients</label>
+            <div class="input-row">
+              <input id="ingredientInput" type="text" placeholder="e.g. lime, rice, eggs" autocomplete="off" />
+              <button class="primary-icon-button" type="submit" aria-label="Add ingredient" title="Add ingredient">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M12 5v14" />
+                  <path d="M5 12h14" />
+                </svg>
+              </button>
+            </div>
+          </form>
+          <div class="chips" id="ingredientChips" aria-live="polite"></div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-heading">
+            <h2>Quick Add</h2>
+          </div>
+          <div class="quick-grid" id="quickIngredients"></div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-heading">
+            <h2>Add Recipe</h2>
+            <button class="icon-button" id="toggleRecipeForm" type="button" aria-expanded="false" aria-controls="recipeForm" aria-label="Show add recipe form" title="Show add recipe form">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 5v14" />
+                <path d="M5 12h14" />
+              </svg>
+            </button>
+          </div>
+          <form class="recipe-form collapsed" id="recipeForm">
+            <label for="recipeSourceUrl">Recipe URL</label>
+            <div class="input-row import-row">
+              <input id="recipeSourceUrl" type="url" placeholder="https://example.com/recipe" />
+              <button class="primary-icon-button" id="importRecipeUrl" type="button" aria-label="Import recipe URL" title="Import recipe URL">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M12 3v12" />
+                  <path d="m7 10 5 5 5-5" />
+                  <path d="M5 21h14" />
+                </svg>
+              </button>
+            </div>
+
+            <label for="recipeName">Recipe name</label>
+            <input id="recipeName" type="text" placeholder="Spicy margarita" />
+
+            <label for="recipeType">Type</label>
+            <select id="recipeType">
+              <option value="drink">Drink</option>
+              <option value="food">Food</option>
+            </select>
+
+            <label for="recipeIngredients">Ingredients</label>
+            <textarea id="recipeIngredients" rows="3" placeholder="tequila, lime, orange liqueur, jalapeno"></textarea>
+
+            <label for="recipeSteps">Steps</label>
+            <textarea id="recipeSteps" rows="3" placeholder="Shake with ice. Strain over fresh ice. Garnish."></textarea>
+
+            <button class="wide-button" type="submit">Save Recipe</button>
+            <p class="form-status" id="recipeFormStatus" aria-live="polite"></p>
+          </form>
+        </section>
+      </aside>
+
+      <main class="main-view">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">What can I make?</p>
+            <h2 id="matchHeadline">Recipes ready for your ingredients</h2>
+          </div>
+          <div class="toolbar" aria-label="Recipe filters">
+            <div class="segmented-control" role="tablist" aria-label="Recipe type">
+              <button class="segment active" type="button" data-filter="all">All</button>
+              <button class="segment" type="button" data-filter="food">Food</button>
+              <button class="segment" type="button" data-filter="drink">Drinks</button>
+            </div>
+            <label class="search-box" for="recipeSearch">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z" />
+                <path d="m16 16 5 5" />
+              </svg>
+              <input id="recipeSearch" type="search" placeholder="Search recipes" />
+            </label>
+          </div>
+        </header>
+
+        <section class="hero-band" aria-label="Recipe matching summary">
+          <div class="summary-card">
+            <div>
+              <span class="metric" id="readyCount">0</span>
+              <p>ready now</p>
+            </div>
+            <div>
+              <span class="metric" id="closeCount">0</span>
+              <p>almost ready</p>
+            </div>
+            <div>
+              <span class="metric" id="ingredientCount">0</span>
+              <p>ingredients listed</p>
+            </div>
+            <div>
+              <span class="metric" id="recipeCount">0</span>
+              <p>TGB recipes</p>
+            </div>
+          </div>
+          <div class="still-life" aria-hidden="true">
+            <div class="plate"></div>
+            <div class="glass"></div>
+            <div class="lime"></div>
+            <div class="fork-lines"></div>
+          </div>
+        </section>
+
+        <section class="results-section" aria-live="polite">
+          <div class="section-title">
+            <h2>Matches</h2>
+            <p id="resultNote">Add ingredients to see your best options first.</p>
+          </div>
+          <div class="recipe-grid" id="recipeGrid"></div>
+        </section>
+      </main>
+    </div>
+
+    <template id="recipeCardTemplate">
+      <article class="recipe-card">
+        <div class="card-topline">
+          <span class="type-pill"></span>
+          <div class="card-actions">
+            <span class="match-label"></span>
+            <button class="delete-recipe" type="button" aria-label="Delete recipe" title="Delete recipe">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M3 6h18" />
+                <path d="M8 6v14" />
+                <path d="M16 6v14" />
+                <path d="M10 11v6" />
+                <path d="M14 11v6" />
+                <path d="M5 6l1 16h12l1-16" />
+                <path d="M9 6V3h6v3" />
+              </svg>
+            </button>
+          </div>
+        </div>
+        <h3></h3>
+        <div class="progress-track">
+          <span></span>
+        </div>
+        <div class="ingredient-lists">
+          <div>
+            <h4>Have</h4>
+            <ul class="have-list"></ul>
+          </div>
+          <div>
+            <h4>Need</h4>
+            <ul class="need-list"></ul>
+          </div>
+        </div>
+        <a class="source-link" href="#" target="_blank" rel="noreferrer">Source</a>
+        <p class="steps"></p>
+      </article>
+    </template>
+
+    <script src="./app.js"></script>
+  </body>
+</html>

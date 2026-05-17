@@ -1,0 +1,267 @@
+[
+  {
+    "id": "tgb-passionfruit-ginger-cocktail",
+    "name": "Passionfruit & Ginger Cocktail",
+    "type": "drink",
+    "sourceUrl": "http://simply-delicious-food.com/2014/01/10/passionfruit-ginger-cocktail/",
+    "ingredients": ["sugar", "water", "ginger", "passion fruit", "lemon", "light rum", "soda water", "mint"],
+    "steps": "Make ginger passion fruit syrup with sugar, water, ginger, passion fruit, lemon juice and zest. Serve with light rum, soda water, fresh mint, and lemon slices.",
+    "source": "tgb"
+  },
+  {
+    "id": "tgb-rosemary-gin-cocktail",
+    "name": "Rosemary Gin Cocktail",
+    "type": "drink",
+    "sourceUrl": "http://food52.com/recipes/19791-rosemary-gin-cocktail",
+    "ingredients": ["rosemary", "water", "sugar", "gin", "lemon juice", "club soda", "ice"],
+    "steps": "Make rosemary syrup, then stir gin, lemon juice, and rosemary syrup over ice. Top with club soda and garnish with rosemary.",
+    "source": "tgb"
+  },
+  {
+    "id": "tgb-gin-ginger-cocktail",
+    "name": "Gin & Ginger Cocktail",
+    "type": "drink",
+    "sourceUrl": "http://www.sweetpaulmag.com/food/gin-amp-ginger-cocktail",
+    "ingredients": ["gin", "ginger liqueur", "ginger ale", "lime", "ice"],
+    "steps": "Divide ingredients between four highball glasses filled with ice and mix well. Garnish with lime and candied ginger.",
+    "source": "tgb"
+  },
+  {
+    "id": "tgb-provencale",
+    "name": "Provencale",
+    "type": "drink",
+    "sourceUrl": "http://www.chow.com/recipes/11161-provencale",
+    "ingredients": ["lavender-infused gin", "vermouth", "cointreau", "ice", "orange"],
+    "steps": "Stir gin, vermouth, and Cointreau with ice. Strain into a chilled martini glass and garnish with orange twist.",
+    "source": "tgb"
+  },
+  {
+    "id": "tgb-vesper",
+    "name": "Vesper",
+    "type": "drink",
+    "sourceUrl": "http://m.drinksmixer.com/drink5062.html",
+    "ingredients": ["gin", "vodka", "kina lillet", "lemon peel"],
+    "steps": "Shake well until ice cold, strain into a deep champagne goblet, and add a thin slice of lemon peel.",
+    "source": "tgb"
+  },
+  {
+    "id": "tgb-paddington",
+    "name": "Paddington Cocktail",
+    "type": "drink",
+    "sourceUrl": "http://www.yummly.com/recipe/Paddington-354491",
+    "ingredients": ["absinthe", "rum", "lillet blanc", "grapefruit juice", "lemon juice", "orange marmalade", "ice"],
+    "steps": "Rinse a chilled coupe with absinthe. Shake remaining ingredients with ice and strain into the prepared glass.",
+    "source": "tgb"
+  },
+  {
+    "id": "tgb-bombay-government-punch",
+    "name": "Bombay Government Punch",
+    "type": "drink",
+    "sourceUrl": "http://www.chowhound.com/recipes/bombay-government-punch-11781",
+    "ingredients": ["demerara sugar", "water", "lime", "batavia arrack", "dark rum", "nutmeg"],
+    "steps": "Make sugar syrup, combine with lime juice, arrack, rum, and water. Chill, add a large ice block, and grate nutmeg over the top.",
+    "source": "tgb"
+  },
+  {
+    "id": "tgb-corsican-cocktail",
+    "name": "The Corsican Cocktail",
+    "type": "drink",
+    "sourceUrl": "http://www.yummly.com/recipe/The-Corsican-Cocktail-507269",
+    "ingredients": ["lillet blanc", "limoncello", "elderflower syrup", "lemon juice", "club soda", "lemon"],
+    "steps": "Combine chilled Lillet, limoncello, elderflower syrup, and lemon juice. Top with club soda and garnish with lemon twists.",
+    "source": "tgb"
+  },
+  {
+    "id": "tgb-c-b-old-fashioned",
+    "name": "C & B Old Fashioned",
+    "type": "drink",
+    "sourceUrl": "http://www.yummly.com/recipe/C-_-b-old-fashioned-354069",
+    "ingredients": ["gin", "lillet blanc", "campari", "benedictine", "angostura bitters", "ice", "orange peel"],
+    "steps": "Stir ingredients with ice, strain into a rocks glass, and serve with a large cube and orange peel.",
+    "source": "tgb"
+  },
+  {
+    "id": "tgb-paella",
+    "name": "Paella",
+    "type": "food",
+    "ingredients": ["short-grain rice", "saffron", "seafood", "chicken broth", "onion", "garlic", "peppers", "tomatoes", "peas", "olive oil"],
+    "steps": "Toast rice in oil, add broth and simmer. Top with seafood and vegetables, cook until seafood is done and rice is tender.",
+    "source": "tgb"
+  },
+  {
+    "id": "tgb-mushroom-risotto",
+    "name": "Mushroom Risotto",
+    "type": "food",
+    "ingredients": ["arborio rice", "mushrooms", "vegetable broth", "white wine", "butter", "parmesan", "onion", "garlic"],
+    "steps": "Saute mushrooms until golden, set aside. Make risotto, then fold in mushrooms at the end.",
+    "source": "tgb"
+  },
+  {
+    "id": "tgb-risotto-milanese",
+    "name": "Risotto Milanese",
+    "type": "food",
+    "ingredients": ["arborio rice", "saffron", "vegetable broth", "chicken broth", "white wine", "butter", "parmesan", "onion"],
+    "steps": "Toast rice, add wine, then broth one ladle at a time while stirring constantly. Finish with butter and cheese.",
+    "source": "tgb"
+  },
+  {
+    "id": "tgb-osso-buco",
+    "name": "Osso Buco",
+    "type": "food",
+    "ingredients": ["veal shanks", "onion", "carrot", "celery", "white wine", "beef broth", "tomatoes", "garlic", "lemon"],
+    "steps": "Brown shanks, saute vegetables, deglaze with wine, and braise for 2 or more hours until tender. Finish with gremolata.",
+    "source": "tgb"
+  },
+  {
+    "id": "tgb-beef-ragu",
+    "name": "Beef Ragu",
+    "type": "food",
+    "ingredients": ["beef chuck", "pancetta", "tomatoes", "red wine", "beef broth", "vegetables"],
+    "steps": "Brown beef, saute aromatics, add tomatoes and wine, then braise low and slow for 2 to 3 hours until tender.",
+    "source": "tgb"
+  },
+  {
+    "id": "tgb-eggplant-parmesan",
+    "name": "Eggplant Parmesan",
+    "type": "food",
+    "ingredients": ["eggplant", "breadcrumbs", "eggs", "marinara sauce", "mozzarella", "parmesan", "flour"],
+    "steps": "Bread and fry eggplant slices, layer with sauce and cheese, then bake until golden and bubbly.",
+    "source": "tgb"
+  },
+  {
+    "id": "tgb-lasagna-bolognese",
+    "name": "Lasagna Bolognese",
+    "type": "food",
+    "ingredients": ["lasagna noodles", "ground beef", "bolognese sauce", "bechamel sauce", "mozzarella", "parmesan"],
+    "steps": "Layer noodles with sauces and cheese, then bake at 350F for 45 minutes until bubbly.",
+    "source": "tgb"
+  },
+  {
+    "id": "tgb-marinara-sauce",
+    "name": "Marinara Sauce",
+    "type": "food",
+    "ingredients": ["canned tomatoes", "garlic", "olive oil", "salt", "black pepper", "basil"],
+    "steps": "Saute garlic in olive oil, add tomatoes, simmer 20 to 30 minutes, season to taste, and finish with basil.",
+    "source": "tgb"
+  },
+  {
+    "id": "tgb-pasta-primavera",
+    "name": "Pasta Primavera",
+    "type": "food",
+    "ingredients": ["pasta", "mixed vegetables", "garlic", "olive oil", "fresh herbs", "lemon", "parmesan"],
+    "steps": "Saute or blanch vegetables, toss with cooked pasta, olive oil and herbs, then add lemon zest and juice.",
+    "source": "tgb"
+  },
+  {
+    "id": "tgb-puttanesca",
+    "name": "Puttanesca",
+    "type": "food",
+    "ingredients": ["spaghetti", "anchovies", "kalamata olives", "capers", "tomatoes", "garlic"],
+    "steps": "Saute garlic and anchovies until dissolved. Add tomatoes, olives and capers, then toss with pasta.",
+    "source": "tgb"
+  },
+  {
+    "id": "tgb-bolognese-sauce",
+    "name": "Bolognese Sauce",
+    "type": "food",
+    "ingredients": ["ground beef", "pancetta", "onion", "carrot", "celery", "tomato paste", "red wine", "milk"],
+    "steps": "Saute vegetables and meat, add tomato paste and wine, simmer slowly for 2 to 3 hours, and finish with milk.",
+    "source": "tgb"
+  },
+  {
+    "id": "tgb-carbonara",
+    "name": "Carbonara",
+    "type": "food",
+    "ingredients": ["spaghetti", "guanciale", "pancetta", "eggs", "pecorino romano", "black pepper"],
+    "steps": "Crisp guanciale, then toss with hot pasta. Off heat, mix in egg mixture and pasta water to create sauce.",
+    "source": "tgb"
+  },
+  {
+    "id": "tgb-spaghetti-aglio-e-olio",
+    "name": "Spaghetti Aglio e Olio",
+    "type": "food",
+    "ingredients": ["spaghetti", "garlic", "olive oil", "red pepper flakes", "parsley"],
+    "steps": "Toast garlic in olive oil with red pepper flakes. Toss with hot pasta and pasta water, then finish with parsley.",
+    "source": "tgb"
+  },
+  {
+    "id": "tgb-black-bean-sweet-potato-tacos",
+    "name": "Black Bean and Sweet Potato Tacos",
+    "type": "food",
+    "ingredients": ["sweet potato", "black beans", "corn tortillas", "avocado", "salsa", "cilantro", "lime", "crema"],
+    "steps": "Roast cubed sweet potato, warm beans with spices, and serve in tortillas with toppings.",
+    "source": "tgb"
+  },
+  {
+    "id": "tgb-thai-red-curry-chicken",
+    "name": "Thai Red Curry with Chicken",
+    "type": "food",
+    "ingredients": ["chicken breast", "thai red curry paste", "coconut milk", "bamboo shoots", "bell pepper", "basil", "lime"],
+    "steps": "Saute curry paste, add coconut milk and simmer. Add chicken and vegetables, cook through, then finish with lime and basil.",
+    "source": "tgb"
+  },
+  {
+    "id": "tgb-spinach-ricotta-stuffed-shells",
+    "name": "Spinach and Ricotta Stuffed Shells",
+    "type": "food",
+    "ingredients": ["jumbo shells", "ricotta", "spinach", "mozzarella", "parmesan", "marinara sauce", "egg"],
+    "steps": "Mix filling, stuff cooked shells, arrange with sauce, and bake until bubbly.",
+    "source": "tgb"
+  },
+  {
+    "id": "tgb-roasted-chicken-root-vegetables",
+    "name": "Roasted Chicken with Root Vegetables",
+    "type": "food",
+    "ingredients": ["whole chicken", "potatoes", "carrots", "onion", "thyme", "rosemary", "olive oil"],
+    "steps": "Season chicken and vegetables with herbs and oil. Roast at 425F until the chicken is cooked.",
+    "source": "tgb"
+  },
+  {
+    "id": "tgb-beef-stir-fry-broccoli",
+    "name": "Beef Stir-Fry with Broccoli",
+    "type": "food",
+    "ingredients": ["beef sirloin", "broccoli", "soy sauce", "garlic", "ginger", "sesame oil", "rice vinegar"],
+    "steps": "Cook beef in batches, stir-fry broccoli, add sauce and beef back in, and serve over rice.",
+    "source": "tgb"
+  },
+  {
+    "id": "tgb-shrimp-tacos-cabbage-slaw",
+    "name": "Shrimp Tacos with Cabbage Slaw",
+    "type": "food",
+    "ingredients": ["shrimp", "corn tortillas", "cabbage", "lime", "cilantro", "jalapeno", "crema"],
+    "steps": "Saute seasoned shrimp. Make cabbage slaw with lime and cilantro. Serve in warm tortillas with crema.",
+    "source": "tgb"
+  },
+  {
+    "id": "tgb-sheet-pan-salmon-vegetables",
+    "name": "Sheet Pan Salmon and Vegetables",
+    "type": "food",
+    "ingredients": ["salmon fillets", "asparagus", "potatoes", "olive oil", "lemon", "garlic"],
+    "steps": "Roast seasoned vegetables at 400F, add salmon, and roast until cooked through.",
+    "source": "tgb"
+  },
+  {
+    "id": "tgb-lemon-chicken-piccata",
+    "name": "Lemon Chicken Piccata",
+    "type": "food",
+    "ingredients": ["chicken breasts", "lemon", "capers", "chicken broth", "olive oil", "garlic"],
+    "steps": "Pound chicken thin and saute until golden. Make sauce with lemon juice, capers and broth.",
+    "source": "tgb"
+  },
+  {
+    "id": "tgb-creamy-garlic-butter-mushroom-pasta",
+    "name": "Creamy Garlic Butter Mushroom Pasta",
+    "type": "food",
+    "ingredients": ["pasta", "mushrooms", "garlic", "butter", "cream", "parmesan", "fresh thyme"],
+    "steps": "Saute mushrooms in butter with garlic, add cream, simmer, then toss with pasta and thyme.",
+    "source": "tgb"
+  },
+  {
+    "id": "tgb-baked-feta-pasta",
+    "name": "Baked Feta Pasta",
+    "type": "food",
+    "ingredients": ["pasta", "cherry tomatoes", "feta", "garlic", "olive oil", "basil"],
+    "steps": "Roast tomatoes and feta, then toss with hot pasta and basil.",
+    "source": "tgb"
+  }
+]
