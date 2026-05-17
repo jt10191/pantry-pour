@@ -90,6 +90,11 @@ const ingredientRejectPatterns = [
   /^your location$/i,
   /^your review$/i,
   /^shop$/i,
+  /^buy ingredients/i,
+  /^create a shopping list$/i,
+  /^view list$/i,
+  /^products we love$/i,
+  /\bdishes we love\b/i,
   /^video$/i,
   /^videos$/i,
   /^community$/i,
@@ -123,8 +128,28 @@ const ingredientRejectPatterns = [
   /^prep time\b/i,
   /^cook time\b/i,
   /^active time\b/i,
-  /^calories\b/i
+  /^calories\b/i,
+  /^middle eastern$/i,
+  /^we love\b/i,
+  /\bholiday(?:s)?\b/i,
+  /\bthanksgiving\b/i,
+  /\bchristmas\b/i,
+  /\bxmas\b/i,
+  /\beaster\b/i,
+  /\bhalloween\b/i,
+  /\bvalentine'?s?\b/i,
+  /\bnew year'?s?\b/i,
+  /\bsuper bowl\b/i,
+  /\bmemorial day\b/i,
+  /\blabor day\b/i,
+  /\bfourth of july\b/i,
+  /\b4th of july\b/i,
+  /\bcinco de mayo\b/i,
+  /\bhanukkah\b/i,
+  /\bpassover\b/i
 ];
+
+const maxInstructionChars = 4000;
 
 const units = [
   "cup",
@@ -200,6 +225,11 @@ const leadingMeasurePattern = new RegExp(
   `^(?:[\\d.,/\\s¼½¾⅓⅔⅛⅜⅝⅞]+|-|to taste\\b|about\\b|approximately\\b|approx\\.?\\b|plus\\b|more\\b|additional\\b|a\\b|an\\b)\\s*(?:${unitsByLength.join("|")})?\\b\\s*(?:of\\s+)?`,
   "i"
 );
+const amountOnlyPattern = new RegExp(
+  `^(?:[\\d.,/\\s¼½¾⅓⅔⅛⅜⅝⅞]+|-|to taste\\b|about\\b|approximately\\b|approx\\.?\\b|a\\b|an\\b)\\s*(?:${unitsByLength.join("|")})?\\s*$`,
+  "i"
+);
+const unitOnlyPattern = new RegExp(`^(?:${unitsByLength.join("|")})$`, "i");
 
 function decodeEntities(value = "") {
   return value
@@ -343,12 +373,51 @@ function collectBestIngredientSection(lines) {
   return best;
 }
 
+function hasMeasure(line) {
+  return new RegExp(`\\b(${unitsByLength.join("|")})\\b`, "i").test(line);
+}
+
+function isAmountOnlyLine(line) {
+  return amountOnlyPattern.test(line.replace(/\([^)]*\)/g, "").trim()) || unitOnlyPattern.test(line);
+}
+
+function coalesceIngredientLines(lines) {
+  const joined = [];
+
+  for (let i = 0; i < lines.length; i += 1) {
+    const line = lines[i];
+    const next = lines[i + 1];
+
+    if (next && unitOnlyPattern.test(line) && hasMeasure(next)) {
+      continue;
+    }
+
+    if (next && isAmountOnlyLine(next) && !isAmountOnlyLine(line) && !hasMeasure(line) && !/^[\d¼½¾⅓⅔⅛⅜⅝⅞]/.test(line)) {
+      continue;
+    }
+
+    if (next && isAmountOnlyLine(line) && isAmountOnlyLine(next)) {
+      continue;
+    }
+
+    if (next && isAmountOnlyLine(line) && !isAmountOnlyLine(next)) {
+      joined.push(`${line} ${next}`);
+      i += 1;
+      continue;
+    }
+
+    joined.push(line);
+  }
+
+  return joined;
+}
+
 function findInstructionText(lines) {
   const start = lines.findIndex(isInstructionStart);
   if (start === -1) return "";
 
   const steps = [];
-  for (let i = start + 1; i < lines.length && steps.join(" ").length < 700; i += 1) {
+  for (let i = start + 1; i < lines.length && steps.join(" ").length < maxInstructionChars; i += 1) {
     const line = lines[i];
     if (steps.length && /^(notes|nutrition|comments|reviews|related|recommended)$/i.test(normalizedHeading(line))) break;
     if (line.length < 3 || /^(\d+\.?)?$/.test(line)) continue;
@@ -356,7 +425,7 @@ function findInstructionText(lines) {
     steps.push(line.replace(/^\d+\s*/, ""));
   }
 
-  return steps.join(" ").replace(/\s+/g, " ").slice(0, 700).trim();
+  return steps.join(" ").replace(/\s+/g, " ").slice(0, maxInstructionChars).trim();
 }
 
 function canonicalIngredient(line) {
@@ -397,7 +466,9 @@ function parseNote(note, defaultType) {
 
   const content = textBetween(note, "content");
   const lines = htmlToLines(content);
-  const ingredientLines = collectBestIngredientSection(lines);
+  const ingredientLines = coalesceIngredientLines(collectBestIngredientSection(lines)).filter(
+    (line) => !ingredientRejectPatterns.some((pattern) => pattern.test(line))
+  );
   if (ingredientLines.length < 2) return null;
 
   const ingredients = [
@@ -467,7 +538,10 @@ for (const recipe of allRecipes) {
 }
 
 const candidates = [...uniqueById.values()].sort((a, b) => a.name.localeCompare(b.name));
-const appRecipes = candidates.map(({ ingredientLines, ...recipe }) => recipe);
+const appRecipes = candidates.map(({ ingredientLines, ...recipe }) => ({
+  ...recipe,
+  displayIngredients: ingredientLines
+}));
 
 await writeFile(join(fileURLToPath(outDir), "recipe-candidates.json"), `${JSON.stringify(candidates, null, 2)}\n`);
 await writeFile(join(fileURLToPath(outDir), "tgb-recipes.json"), `${JSON.stringify(appRecipes, null, 2)}\n`);

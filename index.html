@@ -90,12 +90,15 @@
             </select>
 
             <label for="recipeIngredients">Ingredients</label>
-            <textarea id="recipeIngredients" rows="3" placeholder="tequila, lime, orange liqueur, jalapeno"></textarea>
+            <textarea id="recipeIngredients" rows="5" placeholder="2 oz tequila&#10;1 oz lime juice&#10;1/2 oz orange liqueur"></textarea>
 
             <label for="recipeSteps">Steps</label>
             <textarea id="recipeSteps" rows="3" placeholder="Shake with ice. Strain over fresh ice. Garnish."></textarea>
 
-            <button class="wide-button" type="submit">Save Recipe</button>
+            <div class="form-actions">
+              <button class="wide-button" id="saveRecipeButton" type="submit">Save Recipe</button>
+              <button class="secondary-button" id="cancelRecipeEdit" type="button">Cancel</button>
+            </div>
             <p class="form-status" id="recipeFormStatus" aria-live="polite"></p>
           </form>
         </section>
@@ -166,6 +169,12 @@
           <span class="type-pill"></span>
           <div class="card-actions">
             <span class="match-label"></span>
+            <button class="edit-recipe" type="button" aria-label="Edit recipe" title="Edit recipe">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 20h9" />
+                <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
+              </svg>
+            </button>
             <button class="delete-recipe" type="button" aria-label="Delete recipe" title="Delete recipe">
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M3 6h18" />

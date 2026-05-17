@@ -285,11 +285,39 @@ svg {
   display: none;
 }
 
+.form-actions {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: stretch;
+}
+
 .wide-button {
   min-height: 42px;
   border: 1px solid var(--accent);
   border-radius: 8px;
   font-weight: 800;
+}
+
+.secondary-button {
+  display: none;
+  min-height: 42px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-soft);
+  padding: 0 14px;
+  color: var(--ink);
+  font-weight: 800;
+}
+
+.secondary-button.visible {
+  display: inline-grid;
+  place-items: center;
+}
+
+.secondary-button:hover {
+  border-color: var(--accent-strong);
+  color: var(--accent-strong);
 }
 
 .form-status {
@@ -570,17 +598,29 @@ svg {
   color: #e2a084;
 }
 
+.edit-recipe,
 .delete-recipe {
-  display: none;
+  display: inline-grid;
   place-items: center;
   width: 29px;
   height: 29px;
-  border: 1px solid rgba(183, 102, 74, 0.35);
   border-radius: 8px;
+}
+
+.edit-recipe {
+  border: 1px solid rgba(165, 189, 120, 0.35);
+  background: rgba(165, 189, 120, 0.12);
+  color: #d9e9b8;
+}
+
+.delete-recipe {
+  display: none;
+  border: 1px solid rgba(183, 102, 74, 0.35);
   background: rgba(183, 102, 74, 0.12);
   color: #e2a084;
 }
 
+.edit-recipe svg,
 .delete-recipe svg {
   width: 16px;
   height: 16px;

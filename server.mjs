@@ -116,6 +116,7 @@ function parseRecipeHtml(html, sourceUrl) {
         name: cleanText(recipe.name || extractTitle(html) || "Imported Recipe"),
         type: classifyRecipe(recipe),
         ingredients,
+        displayIngredients: ingredients,
         steps: normalizeInstructions(recipe.recipeInstructions),
         sourceUrl
       };
@@ -128,6 +129,7 @@ function parseRecipeHtml(html, sourceUrl) {
     name: extractTitle(html) || "Imported Recipe",
     type: "food",
     ingredients: [],
+    displayIngredients: [],
     steps: "",
     sourceUrl
   };

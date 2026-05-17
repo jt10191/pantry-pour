@@ -116,6 +116,7 @@ let tgbRecipes = [...fallbackRecipes];
 let recipeSourceLabel = "sample";
 let activeFilter = "all";
 let searchTerm = "";
+let editingRecipeId = null;
 const renderLimit = 160;
 
 const ingredientForm = document.querySelector("#ingredientForm");
@@ -132,6 +133,8 @@ const recipeSteps = document.querySelector("#recipeSteps");
 const recipeSourceUrl = document.querySelector("#recipeSourceUrl");
 const importRecipeUrlButton = document.querySelector("#importRecipeUrl");
 const recipeFormStatus = document.querySelector("#recipeFormStatus");
+const saveRecipeButton = document.querySelector("#saveRecipeButton");
+const cancelRecipeEditButton = document.querySelector("#cancelRecipeEdit");
 const recipeSearch = document.querySelector("#recipeSearch");
 const recipeGrid = document.querySelector("#recipeGrid");
 const recipeCardTemplate = document.querySelector("#recipeCardTemplate");
@@ -149,6 +152,70 @@ function normalize(value) {
 function titleCase(value) {
   return value.replace(/\w\S*/g, (word) => word[0].toUpperCase() + word.slice(1).toLowerCase());
 }
+
+const measureWords = [
+  "cup",
+  "cups",
+  "tablespoon",
+  "tablespoons",
+  "tbsp",
+  "teaspoon",
+  "teaspoons",
+  "tsp",
+  "ounce",
+  "ounces",
+  "oz",
+  "pound",
+  "pounds",
+  "lb",
+  "lbs",
+  "gram",
+  "grams",
+  "g",
+  "kilogram",
+  "kilograms",
+  "kg",
+  "milliliter",
+  "milliliters",
+  "ml",
+  "liter",
+  "liters",
+  "quart",
+  "quarts",
+  "qt",
+  "pint",
+  "pints",
+  "pt",
+  "can",
+  "cans",
+  "package",
+  "packages",
+  "pkg",
+  "jar",
+  "jars",
+  "bottle",
+  "bottles",
+  "dash",
+  "dashes",
+  "pinch",
+  "pinches",
+  "slice",
+  "slices",
+  "clove",
+  "cloves",
+  "sprig",
+  "sprigs",
+  "bunch",
+  "bunches",
+  "small",
+  "medium",
+  "large"
+];
+
+const leadingMeasurePattern = new RegExp(
+  `^(?:[\\d.,/\\s¼½¾⅓⅔⅛⅜⅝⅞]+|-|to taste\\b|about\\b|approximately\\b|approx\\.?\\b|plus\\b|more\\b|additional\\b|a\\b|an\\b)\\s*(?:${measureWords.join("|")})?\\b\\s*(?:of\\s+)?`,
+  "i"
+);
 
 function loadList(key) {
   try {
@@ -192,6 +259,46 @@ function splitIngredients(value) {
     .filter(Boolean);
 }
 
+function splitIngredientEntries(value) {
+  const source = value.includes("\n") ? value.split(/\n/) : value.split(",");
+  return source.map((item) => item.trim()).filter(Boolean);
+}
+
+function canonicalIngredient(line) {
+  return normalize(
+    String(line)
+      .replace(/\([^)]*\)/g, " ")
+      .replace(/\[[^\]]*\]/g, " ")
+      .replace(/\b(?:for the|for serving|for garnish)\b.*$/gi, " ")
+      .replace(/,.*$/g, " ")
+      .replace(/\b(to taste|divided|chopped|minced|sliced|diced|peeled|fresh|freshly|ground|grated|crushed|thinly|roughly|finely|optional|trimmed|packed|melted|softened|room temperature)\b/gi, " ")
+      .replace(leadingMeasurePattern, " ")
+      .replace(leadingMeasurePattern, " ")
+      .replace(/[^a-z0-9&' -]/gi, " ")
+      .replace(/\s+/g, " ")
+  );
+}
+
+function recipeDisplayIngredients(recipe) {
+  if (Array.isArray(recipe.displayIngredients) && recipe.displayIngredients.length) return recipe.displayIngredients;
+  if (Array.isArray(recipe.ingredientLines) && recipe.ingredientLines.length) return recipe.ingredientLines;
+  return Array.isArray(recipe.ingredients) ? recipe.ingredients.map(titleCase) : [];
+}
+
+function ingredientDisplayMap(recipe, canonicalIngredients) {
+  const displayByCanonical = new Map();
+  recipeDisplayIngredients(recipe).forEach((line) => {
+    const key = canonicalIngredient(line);
+    if (key && !displayByCanonical.has(key)) displayByCanonical.set(key, line);
+  });
+
+  canonicalIngredients.forEach((ingredient) => {
+    if (!displayByCanonical.has(ingredient)) displayByCanonical.set(ingredient, titleCase(ingredient));
+  });
+
+  return displayByCanonical;
+}
+
 function addIngredients(values) {
   const next = new Set(ingredients);
   values.map(normalize).filter(Boolean).forEach((item) => next.add(item));
@@ -212,13 +319,46 @@ function deleteRecipe(recipeId) {
   render();
 }
 
+function hasLocalRecipe(recipeId) {
+  return customRecipes.some((recipe) => recipe.id === recipeId);
+}
+
 function setFormStatus(message, tone = "neutral") {
   recipeFormStatus.textContent = message;
   recipeFormStatus.dataset.tone = tone;
 }
 
+function openRecipeForm() {
+  recipeForm.classList.remove("collapsed");
+  toggleRecipeFormButton.setAttribute("aria-expanded", "true");
+  toggleRecipeFormButton.setAttribute("aria-label", "Hide add recipe form");
+  toggleRecipeFormButton.title = "Hide add recipe form";
+}
+
+function resetRecipeForm() {
+  recipeForm.reset();
+  editingRecipeId = null;
+  saveRecipeButton.textContent = "Save Recipe";
+  cancelRecipeEditButton.classList.remove("visible");
+  setFormStatus("", "neutral");
+}
+
+function startRecipeEdit(recipe) {
+  openRecipeForm();
+  editingRecipeId = recipe.id;
+  recipeName.value = recipe.name || "";
+  recipeType.value = recipe.type || "food";
+  recipeIngredients.value = recipeDisplayIngredients(recipe).join("\n");
+  recipeSteps.value = recipe.steps || "";
+  recipeSourceUrl.value = recipe.sourceUrl || "";
+  saveRecipeButton.textContent = "Save Changes";
+  cancelRecipeEditButton.classList.add("visible");
+  setFormStatus("Editing recipe. Saving creates your corrected version in this app.", "neutral");
+  recipeName.focus();
+}
+
 function formatTgbRecipeThought(recipe) {
-  const ingredientsText = recipe.ingredients.map((ingredient) => `- ${titleCase(ingredient)}`).join("\n");
+  const ingredientsText = recipeDisplayIngredients(recipe).map((ingredient) => `- ${ingredient}`).join("\n");
   const sourceText = recipe.sourceUrl ? `\nSource URL: ${recipe.sourceUrl}` : "";
   const stepsText = recipe.steps ? `\nSteps: ${recipe.steps}` : "";
 
@@ -275,7 +415,10 @@ async function ingestRecipeIntoTgb(recipe) {
 }
 
 function allRecipes() {
-  return [...tgbRecipes, ...customRecipes];
+  const recipesById = new Map();
+  tgbRecipes.forEach((recipe) => recipesById.set(recipe.id, recipe));
+  customRecipes.forEach((recipe) => recipesById.set(recipe.id, recipe));
+  return [...recipesById.values()];
 }
 
 async function loadTgbRecipes() {
@@ -301,7 +444,8 @@ function getMatches() {
 
   return allRecipes()
     .map((recipe) => {
-      const recipeIngredients = recipe.ingredients.map(normalize);
+      const recipeIngredients = (recipe.ingredients || []).map(normalize).filter(Boolean);
+      const displayByCanonical = ingredientDisplayMap(recipe, recipeIngredients);
       const have = recipeIngredients.filter((item) => pantry.has(item));
       const need = recipeIngredients.filter((item) => !pantry.has(item));
       const score = recipeIngredients.length ? have.length / recipeIngredients.length : 0;
@@ -311,6 +455,8 @@ function getMatches() {
         ingredients: recipeIngredients,
         have,
         need,
+        haveDisplay: have.map((item) => displayByCanonical.get(item) || titleCase(item)),
+        needDisplay: need.map((item) => displayByCanonical.get(item) || titleCase(item)),
         score,
         isReady: need.length === 0,
         isClose: have.length > 0 && need.length > 0 && need.length <= 2
@@ -333,7 +479,7 @@ function makeListItems(list, node) {
   node.innerHTML = "";
   list.forEach((item) => {
     const li = document.createElement("li");
-    li.textContent = titleCase(item);
+    li.textContent = item;
     node.append(li);
   });
 }
@@ -396,15 +542,20 @@ function renderRecipeCards(matches) {
   matches.slice(0, renderLimit).forEach((recipe) => {
     const card = recipeCardTemplate.content.firstElementChild.cloneNode(true);
     const matchLabel = card.querySelector(".match-label");
+    const editButton = card.querySelector(".edit-recipe");
     const deleteButton = card.querySelector(".delete-recipe");
     const sourceLink = card.querySelector(".source-link");
     const progress = card.querySelector(".progress-track span");
+    const hasLocalOverride = hasLocalRecipe(recipe.id);
 
-    if (recipe.id.startsWith("custom-")) {
+    if (hasLocalOverride) {
       card.classList.add("custom-recipe");
-      deleteButton.setAttribute("aria-label", `Delete ${recipe.name}`);
+      deleteButton.setAttribute("aria-label", `Remove local edit for ${recipe.name}`);
       deleteButton.addEventListener("click", () => deleteRecipe(recipe.id));
     }
+
+    editButton.setAttribute("aria-label", `Edit ${recipe.name}`);
+    editButton.addEventListener("click", () => startRecipeEdit(recipe));
 
     card.querySelector(".type-pill").textContent = recipe.type;
     card.querySelector("h3").textContent = recipe.name;
@@ -427,8 +578,8 @@ function renderRecipeCards(matches) {
       matchLabel.textContent = `${recipe.need.length} missing`;
     }
 
-    makeListItems(recipe.have, card.querySelector(".have-list"));
-    makeListItems(recipe.need, card.querySelector(".need-list"));
+    makeListItems(recipe.haveDisplay, card.querySelector(".have-list"));
+    makeListItems(recipe.needDisplay, card.querySelector(".need-list"));
     recipeGrid.append(card);
   });
 
@@ -502,7 +653,10 @@ toggleRecipeFormButton.addEventListener("click", () => {
   toggleRecipeFormButton.setAttribute("aria-expanded", String(!isCollapsed));
   toggleRecipeFormButton.setAttribute("aria-label", isCollapsed ? "Show add recipe form" : "Hide add recipe form");
   toggleRecipeFormButton.title = isCollapsed ? "Show add recipe form" : "Hide add recipe form";
+  if (isCollapsed) resetRecipeForm();
 });
+
+cancelRecipeEditButton.addEventListener("click", resetRecipeForm);
 
 importRecipeUrlButton.addEventListener("click", async () => {
   const url = recipeSourceUrl.value.trim();
@@ -519,7 +673,7 @@ importRecipeUrlButton.addEventListener("click", async () => {
     const imported = await importRecipeFromUrl(url);
     recipeName.value = imported.name || "";
     recipeType.value = imported.type || "food";
-    recipeIngredients.value = (imported.ingredients || []).join(", ");
+    recipeIngredients.value = recipeDisplayIngredients(imported).join("\n");
     recipeSteps.value = imported.steps || "";
     recipeSourceUrl.value = imported.sourceUrl || url;
     setFormStatus("Imported. Review the fields, then save to add it and queue it for TGB.", "success");
@@ -533,7 +687,10 @@ importRecipeUrlButton.addEventListener("click", async () => {
 recipeForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const name = recipeName.value.trim();
-  const ingredientsForRecipe = splitIngredients(recipeIngredients.value);
+  const displayIngredientsForRecipe = splitIngredientEntries(recipeIngredients.value);
+  const ingredientsForRecipe = [
+    ...new Set(displayIngredientsForRecipe.map(canonicalIngredient).filter((item) => item.length >= 2))
+  ];
 
   if (!name || !ingredientsForRecipe.length) {
     recipeName.focus();
@@ -541,21 +698,29 @@ recipeForm.addEventListener("submit", async (event) => {
   }
 
   const recipe = {
-    id: `custom-${Date.now()}`,
+    id: editingRecipeId || `custom-${Date.now()}`,
     name,
     type: recipeType.value,
     ingredients: ingredientsForRecipe,
+    displayIngredients: displayIngredientsForRecipe,
     steps: recipeSteps.value.trim(),
     sourceUrl: recipeSourceUrl.value.trim()
   };
 
+  customRecipes = customRecipes.filter((item) => item.id !== recipe.id);
   customRecipes.push(recipe);
 
-  recipeForm.reset();
+  const isEditing = Boolean(editingRecipeId);
+  resetRecipeForm();
   saveState();
   render();
 
-  setFormStatus("Saved recipe. Sending structured capture to TGB bridge...", "neutral");
+  setFormStatus(
+    isEditing ? "Saved your recipe correction." : "Saved recipe. Sending structured capture to TGB bridge...",
+    "neutral"
+  );
+  if (isEditing) return;
+
   const tgbResult = await ingestRecipeIntoTgb(recipe);
   setFormStatus(tgbResult.message || "Saved and queued for TGB.", "success");
 });
