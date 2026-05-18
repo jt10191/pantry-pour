@@ -171,6 +171,7 @@ let mealPlans = loadMealPlans();
 let shoppingChecks = loadShoppingChecks();
 let deletedRecipeIds = loadList(storeKeys.deletedRecipes);
 let tgbEventQueue = loadList(storeKeys.tgbEventQueue);
+let tgbCaptureQueue = loadList(storeKeys.tgbQueue);
 let tgbRecipes = [...fallbackRecipes];
 let recipeSourceLabel = "sample";
 let activeFilter = "all";
@@ -190,6 +191,10 @@ const ingredientInput = document.querySelector("#ingredientInput");
 const ingredientChips = document.querySelector("#ingredientChips");
 const quickIngredientsNode = document.querySelector("#quickIngredients");
 const clearIngredientsButton = document.querySelector("#clearIngredients");
+const clipRecipeForm = document.querySelector("#clipRecipeForm");
+const clipRecipeUrl = document.querySelector("#clipRecipeUrl");
+const clipRecipeButton = document.querySelector("#clipRecipeButton");
+const clipRecipeStatus = document.querySelector("#clipRecipeStatus");
 const searchPanel = document.querySelector("#searchPanel");
 const mealPlanPanel = document.querySelector("#mealPlanPanel");
 const tgbPanel = document.querySelector("#tgbPanel");
@@ -414,15 +419,15 @@ function saveState() {
 }
 
 function saveTgbQueue(recipe, content, status) {
-  const queue = loadList(storeKeys.tgbQueue);
-  queue.push({
-    id: `tgb-${Date.now()}`,
+  tgbCaptureQueue = [...tgbCaptureQueue];
+  tgbCaptureQueue.push({
+    id: `tgb-${Date.now()}-${tgbCaptureQueue.length}`,
     capturedAt: new Date().toISOString(),
     status,
     recipe,
     content
   });
-  localStorage.setItem(storeKeys.tgbQueue, JSON.stringify(queue));
+  localStorage.setItem(storeKeys.tgbQueue, JSON.stringify(tgbCaptureQueue));
 }
 
 function saveTgbEventQueue(event, status) {
@@ -652,6 +657,11 @@ function setTgbSyncStatus(message, tone = "neutral") {
   tgbSyncStatus.dataset.tone = tone;
 }
 
+function setClipRecipeStatus(message, tone = "neutral") {
+  clipRecipeStatus.textContent = message;
+  clipRecipeStatus.dataset.tone = tone;
+}
+
 function findRecipeByTitle(title) {
   const wanted = normalize(title);
   return allRecipes().find((recipe) => normalize(recipe.name) === wanted) || null;
@@ -795,6 +805,21 @@ async function importRecipeFromUrl(url) {
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
     throw new Error(payload.error || "Could not import that recipe URL.");
+  }
+
+  return payload.recipe;
+}
+
+async function clipRecipeFromUrl(url) {
+  const response = await fetch("/api/clip-recipe", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ url })
+  });
+
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(payload.error || "Could not clip that recipe URL.");
   }
 
   return payload.recipe;
@@ -1010,30 +1035,35 @@ function tgbEventText(event) {
 }
 
 function tgbEventBundle() {
-  return tgbEventQueue.map((event, index) => `# TGB recipe correction ${index + 1}\n${tgbEventText(event)}`).join("\n\n---\n\n");
+  const captures = tgbCaptureQueue.map((event, index) => `# TGB clipped recipe ${index + 1}\n${event.content}`);
+  const corrections = tgbEventQueue.map((event, index) => `# TGB recipe correction ${index + 1}\n${tgbEventText(event)}`);
+  return [...captures, ...corrections].join("\n\n---\n\n");
 }
 
 async function copyTgbEventQueue() {
-  if (!tgbEventQueue.length) return;
+  if (!tgbCaptureQueue.length && !tgbEventQueue.length) return;
   const text = tgbEventBundle();
+  const total = tgbCaptureQueue.length + tgbEventQueue.length;
 
   try {
     await navigator.clipboard.writeText(text);
-    setTgbSyncStatus(`Copied ${tgbEventQueue.length} pending correction${tgbEventQueue.length === 1 ? "" : "s"}.`, "success");
+    setTgbSyncStatus(`Copied ${total} pending TGB note${total === 1 ? "" : "s"}.`, "success");
   } catch {
-    window.prompt("Copy these TGB correction notes:", text);
-    setTgbSyncStatus("Copy the correction notes from the prompt.", "warning");
+    window.prompt("Copy these TGB notes:", text);
+    setTgbSyncStatus("Copy the TGB notes from the prompt.", "warning");
   }
 }
 
 function clearTgbEventQueue() {
-  if (!tgbEventQueue.length) return;
-  const confirmed = window.confirm("Mark all pending TGB correction notes as captured?");
+  if (!tgbCaptureQueue.length && !tgbEventQueue.length) return;
+  const confirmed = window.confirm("Mark all pending TGB notes as captured?");
   if (!confirmed) return;
 
+  tgbCaptureQueue = [];
   tgbEventQueue = [];
+  localStorage.setItem(storeKeys.tgbQueue, JSON.stringify(tgbCaptureQueue));
   localStorage.setItem(storeKeys.tgbEventQueue, JSON.stringify(tgbEventQueue));
-  setTgbSyncStatus("Cleared pending TGB correction notes.", "success");
+  setTgbSyncStatus("Cleared pending TGB notes.", "success");
   render();
 }
 
@@ -1339,16 +1369,23 @@ function renderMealSummaryCards() {
 
 function renderTgbPanel() {
   tgbQueueList.innerHTML = "";
-  copyTgbEventsButton.disabled = !tgbEventQueue.length;
-  clearTgbEventsButton.disabled = !tgbEventQueue.length;
+  const total = tgbCaptureQueue.length + tgbEventQueue.length;
+  copyTgbEventsButton.disabled = !total;
+  clearTgbEventsButton.disabled = !total;
 
-  if (!tgbEventQueue.length) {
+  if (!total) {
     const empty = document.createElement("li");
     empty.className = "muted-text";
-    empty.textContent = "No pending TGB corrections.";
+    empty.textContent = "No pending TGB notes.";
     tgbQueueList.append(empty);
     return;
   }
+
+  tgbCaptureQueue.forEach((event) => {
+    const item = document.createElement("li");
+    item.textContent = `Clipped: ${event.recipe?.name || "Recipe"} (${event.status || "queued"})`;
+    tgbQueueList.append(item);
+  });
 
   tgbEventQueue.forEach((event) => {
     const item = document.createElement("li");
@@ -1360,14 +1397,33 @@ function renderTgbPanel() {
 
 function renderTgbEventCards() {
   recipeGrid.innerHTML = "";
+  const total = tgbCaptureQueue.length + tgbEventQueue.length;
 
-  if (!tgbEventQueue.length) {
+  if (!total) {
     const empty = document.createElement("div");
     empty.className = "empty-state";
-    empty.innerHTML = "<h3>No pending TGB corrections</h3><p>Recipe edits and deletions will appear here before they are captured into Open Brain.</p>";
+    empty.innerHTML = "<h3>No pending TGB notes</h3><p>Clipped recipes, edits, and deletions will appear here before they are captured into Open Brain.</p>";
     recipeGrid.append(empty);
     return;
   }
+
+  tgbCaptureQueue.forEach((event, index) => {
+    const card = document.createElement("article");
+    card.className = "tgb-event-card";
+
+    const label = document.createElement("span");
+    label.className = "match-label ready";
+    label.textContent = "clipped";
+
+    const heading = document.createElement("h3");
+    heading.textContent = event.recipe?.name || `Clipped recipe ${index + 1}`;
+
+    const body = document.createElement("pre");
+    body.textContent = event.content || "";
+
+    card.append(label, heading, body);
+    recipeGrid.append(card);
+  });
 
   tgbEventQueue.forEach((event, index) => {
     const card = document.createElement("article");
@@ -1557,22 +1613,24 @@ function renderRecipeCards(matches) {
 
 function renderSummary(matches) {
   if (activeSidebarMode === "tgb") {
+    const captures = tgbCaptureQueue.length;
     const updates = tgbEventQueue.filter((event) => event.action === "updated").length;
     const deletes = tgbEventQueue.filter((event) => event.action === "deleted").length;
+    const total = captures + tgbEventQueue.length;
 
-    readyCount.textContent = tgbEventQueue.length;
+    readyCount.textContent = total;
     closeCount.textContent = updates;
-    ingredientCount.textContent = deletes;
+    ingredientCount.textContent = captures;
     recipeCount.textContent = tgbRecipes.length;
     readyLabel.textContent = "pending sync";
     closeLabel.textContent = "updates";
-    ingredientLabel.textContent = "deletes";
+    ingredientLabel.textContent = "clips";
     recipeLabel.textContent = "TGB recipes";
     resultsTitle.textContent = "TGB Sync";
-    resultNote.textContent = tgbEventQueue.length
-      ? "Copy pending correction notes, capture them into Open Brain, then mark them captured."
-      : "Recipe changes will appear here as append-only Open Brain correction notes.";
-    matchHeadline.textContent = "Open Brain correction queue";
+    resultNote.textContent = total
+      ? "Copy pending notes, capture them into Open Brain, then mark them captured."
+      : "Clipped recipes and recipe changes will appear here as append-only Open Brain notes.";
+    matchHeadline.textContent = "Open Brain capture queue";
     return;
   }
 
@@ -1686,6 +1744,52 @@ clearIngredientsButton.addEventListener("click", () => {
   ingredients = [];
   saveState();
   render();
+});
+
+clipRecipeForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const url = clipRecipeUrl.value.trim();
+  if (!url) {
+    clipRecipeUrl.focus();
+    setClipRecipeStatus("Paste a recipe URL first.", "warning");
+    return;
+  }
+
+  clipRecipeButton.disabled = true;
+  setClipRecipeStatus("Clipping and cleaning recipe...", "neutral");
+
+  try {
+    const clipped = await clipRecipeFromUrl(url);
+    const displayIngredientsForRecipe = recipeDisplayIngredients(clipped);
+    const recipe = {
+      id: `clip-${Date.now()}`,
+      name: clipped.name || "Clipped Recipe",
+      type: clipped.type || "food",
+      ingredients: [
+        ...new Set(displayIngredientsForRecipe.map(canonicalIngredient).filter((item) => item.length >= 2))
+      ],
+      displayIngredients: displayIngredientsForRecipe,
+      steps: clipped.steps || clipped.clippedBody || "",
+      sourceUrl: clipped.sourceUrl || url
+    };
+
+    customRecipes = customRecipes.filter((item) => item.id !== recipe.id);
+    customRecipes.push(recipe);
+    deletedRecipeIds = deletedRecipeIds.filter((recipeId) => recipeId !== recipe.id);
+    saveState();
+    clipRecipeUrl.value = "";
+    activeSidebarMode = "search";
+    activeFilter = "all";
+    document.querySelectorAll(".segment").forEach((item) => item.classList.toggle("active", item.dataset.filter === "all"));
+    render();
+
+    const tgbResult = await ingestRecipeIntoTgb(recipe);
+    setClipRecipeStatus(tgbResult.message || "Clipped recipe and queued it for TGB.", "success");
+  } catch (error) {
+    setClipRecipeStatus(error.message, "warning");
+  } finally {
+    clipRecipeButton.disabled = false;
+  }
 });
 
 document.addEventListener("click", () => closePlanMenus());

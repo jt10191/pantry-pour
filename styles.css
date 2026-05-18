@@ -361,6 +361,11 @@ svg {
   gap: 10px;
 }
 
+.clip-form {
+  display: grid;
+  gap: 10px;
+}
+
 .planned-day-list {
   display: grid;
   gap: 8px;

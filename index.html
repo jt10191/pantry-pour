@@ -66,6 +66,27 @@
 
         <section class="panel">
           <div class="panel-heading">
+            <h2>Clip Recipe</h2>
+          </div>
+          <form class="clip-form" id="clipRecipeForm">
+            <label for="clipRecipeUrl">Recipe URL</label>
+            <div class="input-row">
+              <input id="clipRecipeUrl" type="url" placeholder="https://example.com/recipe" />
+              <button class="primary-icon-button" id="clipRecipeButton" type="submit" aria-label="Clip recipe URL" title="Clip recipe URL">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M8 7h8" />
+                  <path d="M8 12h8" />
+                  <path d="M8 17h5" />
+                  <path d="M5 3h14v18H5Z" />
+                </svg>
+              </button>
+            </div>
+            <p class="form-status" id="clipRecipeStatus" aria-live="polite"></p>
+          </form>
+        </section>
+
+        <section class="panel">
+          <div class="panel-heading">
             <h2>Add Recipe</h2>
             <button class="icon-button" id="toggleRecipeForm" type="button" aria-expanded="false" aria-controls="recipeForm" aria-label="Show add recipe form" title="Show add recipe form">
               <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -153,7 +174,7 @@
             <div class="panel-heading">
               <h2>TGB Sync</h2>
             </div>
-            <p class="sync-note">Recipe edits and deletions become append-only correction notes for Open Brain.</p>
+            <p class="sync-note">Clipped recipes, edits, and deletions become append-only notes for Open Brain.</p>
             <div class="tgb-sync-actions">
               <button class="wide-button" id="copyTgbEvents" type="button">Copy Pending</button>
               <button class="secondary-button visible" id="clearTgbEvents" type="button">Mark Captured</button>
