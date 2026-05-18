@@ -170,6 +170,7 @@ let customRecipes = loadRecipes();
 let mealPlans = loadMealPlans();
 let shoppingChecks = loadShoppingChecks();
 let deletedRecipeIds = loadList(storeKeys.deletedRecipes);
+let tgbEventQueue = loadList(storeKeys.tgbEventQueue);
 let tgbRecipes = [...fallbackRecipes];
 let recipeSourceLabel = "sample";
 let activeFilter = "all";
@@ -191,6 +192,7 @@ const quickIngredientsNode = document.querySelector("#quickIngredients");
 const clearIngredientsButton = document.querySelector("#clearIngredients");
 const searchPanel = document.querySelector("#searchPanel");
 const mealPlanPanel = document.querySelector("#mealPlanPanel");
+const tgbPanel = document.querySelector("#tgbPanel");
 const mealPlanAddForm = document.querySelector("#mealPlanAddForm");
 const mealRecipeInput = document.querySelector("#mealRecipeInput");
 const recipeTitleOptions = document.querySelector("#recipeTitleOptions");
@@ -201,6 +203,10 @@ const mealSummaryViewButton = document.querySelector("#mealSummaryViewButton");
 const weekPlanRows = document.querySelector("#weekPlanRows");
 const mealPlanIngredients = document.querySelector("#mealPlanIngredients");
 const mealPlanStatus = document.querySelector("#mealPlanStatus");
+const copyTgbEventsButton = document.querySelector("#copyTgbEvents");
+const clearTgbEventsButton = document.querySelector("#clearTgbEvents");
+const tgbSyncStatus = document.querySelector("#tgbSyncStatus");
+const tgbQueueList = document.querySelector("#tgbQueueList");
 const recipeForm = document.querySelector("#recipeForm");
 const toggleRecipeFormButton = document.querySelector("#toggleRecipeForm");
 const recipeName = document.querySelector("#recipeName");
@@ -420,14 +426,14 @@ function saveTgbQueue(recipe, content, status) {
 }
 
 function saveTgbEventQueue(event, status) {
-  const queue = loadList(storeKeys.tgbEventQueue);
-  queue.push({
-    id: `tgb-event-${Date.now()}`,
+  tgbEventQueue = [...tgbEventQueue];
+  tgbEventQueue.push({
+    id: `tgb-event-${Date.now()}-${tgbEventQueue.length}`,
     capturedAt: new Date().toISOString(),
     status,
     ...event
   });
-  localStorage.setItem(storeKeys.tgbEventQueue, JSON.stringify(queue));
+  localStorage.setItem(storeKeys.tgbEventQueue, JSON.stringify(tgbEventQueue));
 }
 
 function splitIngredients(value) {
@@ -639,6 +645,11 @@ function hasLocalRecipe(recipeId) {
 function setMealPlanStatus(message, tone = "neutral") {
   mealPlanStatus.textContent = message;
   mealPlanStatus.dataset.tone = tone;
+}
+
+function setTgbSyncStatus(message, tone = "neutral") {
+  tgbSyncStatus.textContent = message;
+  tgbSyncStatus.dataset.tone = tone;
 }
 
 function findRecipeByTitle(title) {
@@ -994,6 +1005,38 @@ function closePlanMenus(except = null) {
   });
 }
 
+function tgbEventText(event) {
+  return event.content || formatTgbRecipeEvent(event.action, event.recipe, event.previousRecipe);
+}
+
+function tgbEventBundle() {
+  return tgbEventQueue.map((event, index) => `# TGB recipe correction ${index + 1}\n${tgbEventText(event)}`).join("\n\n---\n\n");
+}
+
+async function copyTgbEventQueue() {
+  if (!tgbEventQueue.length) return;
+  const text = tgbEventBundle();
+
+  try {
+    await navigator.clipboard.writeText(text);
+    setTgbSyncStatus(`Copied ${tgbEventQueue.length} pending correction${tgbEventQueue.length === 1 ? "" : "s"}.`, "success");
+  } catch {
+    window.prompt("Copy these TGB correction notes:", text);
+    setTgbSyncStatus("Copy the correction notes from the prompt.", "warning");
+  }
+}
+
+function clearTgbEventQueue() {
+  if (!tgbEventQueue.length) return;
+  const confirmed = window.confirm("Mark all pending TGB correction notes as captured?");
+  if (!confirmed) return;
+
+  tgbEventQueue = [];
+  localStorage.setItem(storeKeys.tgbEventQueue, JSON.stringify(tgbEventQueue));
+  setTgbSyncStatus("Cleared pending TGB correction notes.", "success");
+  render();
+}
+
 function mealPlanIngredientTotals(weekKey = activeMealWeek) {
   const totals = new Map();
   const byId = recipesById();
@@ -1294,6 +1337,57 @@ function renderMealSummaryCards() {
   });
 }
 
+function renderTgbPanel() {
+  tgbQueueList.innerHTML = "";
+  copyTgbEventsButton.disabled = !tgbEventQueue.length;
+  clearTgbEventsButton.disabled = !tgbEventQueue.length;
+
+  if (!tgbEventQueue.length) {
+    const empty = document.createElement("li");
+    empty.className = "muted-text";
+    empty.textContent = "No pending TGB corrections.";
+    tgbQueueList.append(empty);
+    return;
+  }
+
+  tgbEventQueue.forEach((event) => {
+    const item = document.createElement("li");
+    const action = event.action === "deleted" ? "Deleted" : "Updated";
+    item.textContent = `${action}: ${event.recipe?.name || "Recipe"} (${event.status || "queued"})`;
+    tgbQueueList.append(item);
+  });
+}
+
+function renderTgbEventCards() {
+  recipeGrid.innerHTML = "";
+
+  if (!tgbEventQueue.length) {
+    const empty = document.createElement("div");
+    empty.className = "empty-state";
+    empty.innerHTML = "<h3>No pending TGB corrections</h3><p>Recipe edits and deletions will appear here before they are captured into Open Brain.</p>";
+    recipeGrid.append(empty);
+    return;
+  }
+
+  tgbEventQueue.forEach((event, index) => {
+    const card = document.createElement("article");
+    card.className = "tgb-event-card";
+
+    const label = document.createElement("span");
+    label.className = `match-label ${event.action === "deleted" ? "missing" : "ready"}`;
+    label.textContent = event.action || "queued";
+
+    const heading = document.createElement("h3");
+    heading.textContent = event.recipe?.name || `Correction ${index + 1}`;
+
+    const body = document.createElement("pre");
+    body.textContent = tgbEventText(event);
+
+    card.append(label, heading, body);
+    recipeGrid.append(card);
+  });
+}
+
 function renderIngredientChips() {
   ingredientChips.innerHTML = "";
 
@@ -1462,6 +1556,26 @@ function renderRecipeCards(matches) {
 }
 
 function renderSummary(matches) {
+  if (activeSidebarMode === "tgb") {
+    const updates = tgbEventQueue.filter((event) => event.action === "updated").length;
+    const deletes = tgbEventQueue.filter((event) => event.action === "deleted").length;
+
+    readyCount.textContent = tgbEventQueue.length;
+    closeCount.textContent = updates;
+    ingredientCount.textContent = deletes;
+    recipeCount.textContent = tgbRecipes.length;
+    readyLabel.textContent = "pending sync";
+    closeLabel.textContent = "updates";
+    ingredientLabel.textContent = "deletes";
+    recipeLabel.textContent = "TGB recipes";
+    resultsTitle.textContent = "TGB Sync";
+    resultNote.textContent = tgbEventQueue.length
+      ? "Copy pending correction notes, capture them into Open Brain, then mark them captured."
+      : "Recipe changes will appear here as append-only Open Brain correction notes.";
+    matchHeadline.textContent = "Open Brain correction queue";
+    return;
+  }
+
   if (activeSidebarMode === "meal") {
     const day = mealDays.find((item) => item.key === activeMealDay);
     const weekRecipeCount = plannedRecipeIdsForWeek().length;
@@ -1535,17 +1649,22 @@ function renderSummary(matches) {
 
 function render() {
   const isMealMode = activeSidebarMode === "meal";
-  const matches = isMealMode ? getMealPlanMatches() : getMatches();
-  searchPanel.classList.toggle("hidden", isMealMode);
+  const isTgbMode = activeSidebarMode === "tgb";
+  const matches = isMealMode ? getMealPlanMatches() : isTgbMode ? [] : getMatches();
+  searchPanel.classList.toggle("hidden", isMealMode || isTgbMode);
   mealPlanPanel.classList.toggle("hidden", !isMealMode);
+  tgbPanel.classList.toggle("hidden", !isTgbMode);
   document.querySelectorAll(".sidebar-mode").forEach((button) => {
     button.classList.toggle("active", button.dataset.sidebarMode === activeSidebarMode);
   });
   renderIngredientChips();
   renderQuickIngredients();
   renderMealPlanPanel();
+  renderTgbPanel();
   renderSummary(matches);
-  if (isMealMode && activeMealRightView === "summary") {
+  if (isTgbMode) {
+    renderTgbEventCards();
+  } else if (isMealMode && activeMealRightView === "summary") {
     renderMealSummaryCards();
   } else if (isMealMode && activeMealRightView === "shopping") {
     renderShoppingList();
@@ -1570,6 +1689,9 @@ clearIngredientsButton.addEventListener("click", () => {
 });
 
 document.addEventListener("click", () => closePlanMenus());
+
+copyTgbEventsButton.addEventListener("click", copyTgbEventQueue);
+clearTgbEventsButton.addEventListener("click", clearTgbEventQueue);
 
 document.querySelectorAll(".sidebar-mode").forEach((button) => {
   button.addEventListener("click", () => {

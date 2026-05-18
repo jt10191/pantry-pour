@@ -23,6 +23,7 @@
         <div class="sidebar-mode-switch" aria-label="Workspace mode">
           <button class="sidebar-mode active" type="button" data-sidebar-mode="search">Search</button>
           <button class="sidebar-mode" type="button" data-sidebar-mode="meal">Meal Plan</button>
+          <button class="sidebar-mode" type="button" data-sidebar-mode="tgb">TGB Sync</button>
         </div>
 
         <div class="sidebar-panel-set" id="searchPanel">
@@ -144,6 +145,21 @@
               <h2>Plan Ingredients</h2>
             </div>
             <ul class="meal-ingredient-list" id="mealPlanIngredients"></ul>
+          </section>
+        </div>
+
+        <div class="sidebar-panel-set hidden" id="tgbPanel">
+          <section class="panel">
+            <div class="panel-heading">
+              <h2>TGB Sync</h2>
+            </div>
+            <p class="sync-note">Recipe edits and deletions become append-only correction notes for Open Brain.</p>
+            <div class="tgb-sync-actions">
+              <button class="wide-button" id="copyTgbEvents" type="button">Copy Pending</button>
+              <button class="secondary-button visible" id="clearTgbEvents" type="button">Mark Captured</button>
+            </div>
+            <p class="form-status" id="tgbSyncStatus" aria-live="polite"></p>
+            <ul class="tgb-queue-list" id="tgbQueueList"></ul>
           </section>
         </div>
       </aside>
