@@ -207,6 +207,51 @@ async function ingestRecipe(request, response) {
   });
 }
 
+async function captureRecipeEvent(request, response) {
+  const { action, recipe, previousRecipe, content } = await readJson(request);
+  if (!action || !recipe?.name || !content) {
+    sendJson(response, 400, { error: "Recipe change action, recipe, and TGB content are required." });
+    return;
+  }
+
+  const event = {
+    capturedAt: new Date().toISOString(),
+    action,
+    recipe,
+    previousRecipe: previousRecipe || null,
+    content
+  };
+
+  const captureUrl = process.env.TGB_CAPTURE_URL;
+  if (captureUrl) {
+    const captureResponse = await fetch(captureUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(process.env.TGB_ACCESS_KEY ? { Authorization: `Bearer ${process.env.TGB_ACCESS_KEY}` } : {})
+      },
+      body: JSON.stringify(event)
+    });
+
+    if (!captureResponse.ok) {
+      sendJson(response, 502, { error: `TGB endpoint rejected the recipe change (${captureResponse.status}).` });
+      return;
+    }
+
+    sendJson(response, 200, { ok: true, mode: "remote", message: "Sent recipe change to TGB." });
+    return;
+  }
+
+  await mkdir(join(root, "data"), { recursive: true });
+  await appendFile(join(root, "data", "tgb-recipe-events.jsonl"), `${JSON.stringify(event)}\n`);
+
+  sendJson(response, 200, {
+    ok: true,
+    mode: "local-queue",
+    message: "Queued recipe change for TGB."
+  });
+}
+
 async function listRecipes(response) {
   try {
     const file = await readFile(join(root, "data", "tgb-recipes.json"), "utf-8");
@@ -255,6 +300,11 @@ const server = createServer(async (request, response) => {
 
     if (request.method === "POST" && url.pathname === "/api/tgb/ingest-recipe") {
       await ingestRecipe(request, response);
+      return;
+    }
+
+    if (request.method === "POST" && url.pathname === "/api/tgb/recipe-event") {
+      await captureRecipeEvent(request, response);
       return;
     }
 

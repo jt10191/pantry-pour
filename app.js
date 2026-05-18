@@ -109,6 +109,8 @@ const storeKeys = {
   recipes: "pantry-pour-recipes",
   mealPlan: "pantry-pour-meal-plan",
   shoppingChecks: "pantry-pour-shopping-checks",
+  deletedRecipes: "pantry-pour-deleted-recipes",
+  tgbEventQueue: "pantry-pour-tgb-event-queue",
   tgbQueue: "pantry-pour-tgb-queue"
 };
 
@@ -167,6 +169,7 @@ let ingredients = loadList(storeKeys.ingredients);
 let customRecipes = loadRecipes();
 let mealPlans = loadMealPlans();
 let shoppingChecks = loadShoppingChecks();
+let deletedRecipeIds = loadList(storeKeys.deletedRecipes);
 let tgbRecipes = [...fallbackRecipes];
 let recipeSourceLabel = "sample";
 let activeFilter = "all";
@@ -401,6 +404,7 @@ function saveState() {
   localStorage.setItem(storeKeys.recipes, JSON.stringify(customRecipes));
   localStorage.setItem(storeKeys.mealPlan, JSON.stringify(mealPlans));
   localStorage.setItem(storeKeys.shoppingChecks, JSON.stringify(shoppingChecks));
+  localStorage.setItem(storeKeys.deletedRecipes, JSON.stringify(deletedRecipeIds));
 }
 
 function saveTgbQueue(recipe, content, status) {
@@ -413,6 +417,17 @@ function saveTgbQueue(recipe, content, status) {
     content
   });
   localStorage.setItem(storeKeys.tgbQueue, JSON.stringify(queue));
+}
+
+function saveTgbEventQueue(event, status) {
+  const queue = loadList(storeKeys.tgbEventQueue);
+  queue.push({
+    id: `tgb-event-${Date.now()}`,
+    capturedAt: new Date().toISOString(),
+    status,
+    ...event
+  });
+  localStorage.setItem(storeKeys.tgbEventQueue, JSON.stringify(queue));
 }
 
 function splitIngredients(value) {
@@ -600,15 +615,21 @@ function removeIngredient(item) {
   render();
 }
 
-function deleteRecipe(recipeId) {
-  customRecipes = customRecipes.filter((recipe) => recipe.id !== recipeId);
+async function deleteRecipe(recipe) {
+  const confirmed = window.confirm(`Delete "${recipe.name}" from Pantry Pour?`);
+  if (!confirmed) return;
+
+  deletedRecipeIds = [...new Set([...deletedRecipeIds, recipe.id])];
+  customRecipes = customRecipes.filter((item) => item.id !== recipe.id);
   Object.keys(mealPlans).forEach((weekKey) => {
     mealDays.forEach((day) => {
-      mealPlans[weekKey][day.key] = mealPlans[weekKey][day.key].filter((plannedId) => plannedId !== recipeId);
+      mealPlans[weekKey][day.key] = mealPlans[weekKey][day.key].filter((plannedId) => plannedId !== recipe.id);
     });
   });
+  if (editingRecipeId === recipe.id) resetRecipeForm();
   saveState();
   render();
+  await syncRecipeEventToTgb("deleted", recipe);
 }
 
 function hasLocalRecipe(recipeId) {
@@ -727,6 +748,32 @@ Ingredients:
 ${ingredientsText}${stepsText}`;
 }
 
+function formatTgbRecipeEvent(action, recipe, previousRecipe = null) {
+  const currentIngredients = recipeDisplayIngredients(recipe).map((ingredient) => `- ${ingredient}`).join("\n");
+  const previousIngredients = previousRecipe
+    ? recipeDisplayIngredients(previousRecipe).map((ingredient) => `- ${ingredient}`).join("\n")
+    : "";
+  const previousText = previousRecipe
+    ? `
+
+Previous version:
+Name: ${previousRecipe.name}
+Type: ${previousRecipe.type}
+Ingredients:
+${previousIngredients}
+Instructions: ${previousRecipe.steps || "No instructions saved."}`
+    : "";
+
+  return `Recipe ${action} in Pantry Pour / TGB.
+Recipe ID: ${recipe.id}
+Name: ${recipe.name}
+Type: ${recipe.type}
+Source URL: ${recipe.sourceUrl || "None"}
+Ingredients:
+${currentIngredients}
+Instructions: ${recipe.steps || "No instructions saved."}${previousText}`;
+}
+
 async function importRecipeFromUrl(url) {
   const response = await fetch("/api/import-recipe", {
     method: "POST",
@@ -772,10 +819,46 @@ async function ingestRecipeIntoTgb(recipe) {
   }
 }
 
+async function syncRecipeEventToTgb(action, recipe, previousRecipe = null) {
+  const content = formatTgbRecipeEvent(action, recipe, previousRecipe);
+  const event = { action, recipe, previousRecipe, content };
+
+  try {
+    const response = await fetch("/api/tgb/recipe-event", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(event)
+    });
+
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(payload.error || "TGB bridge did not accept the recipe change.");
+    }
+
+    if (payload.mode === "local-queue") {
+      saveTgbEventQueue(event, "queued");
+    }
+
+    return payload;
+  } catch {
+    saveTgbEventQueue(event, "queued-local");
+    return {
+      ok: true,
+      mode: "browser-queue",
+      message: "Saved recipe change locally for TGB sync."
+    };
+  }
+}
+
 function allRecipes() {
+  const deleted = new Set(deletedRecipeIds);
   const recipesById = new Map();
-  tgbRecipes.forEach((recipe) => recipesById.set(recipe.id, recipe));
-  customRecipes.forEach((recipe) => recipesById.set(recipe.id, recipe));
+  tgbRecipes.forEach((recipe) => {
+    if (!deleted.has(recipe.id)) recipesById.set(recipe.id, recipe);
+  });
+  customRecipes.forEach((recipe) => {
+    if (!deleted.has(recipe.id)) recipesById.set(recipe.id, recipe);
+  });
   return [...recipesById.values()];
 }
 
@@ -903,6 +986,12 @@ function toggleInstructions(recipeId) {
     expandedRecipeIds.add(recipeId);
   }
   render();
+}
+
+function closePlanMenus(except = null) {
+  document.querySelectorAll(".plan-menu.open").forEach((menu) => {
+    if (menu !== except) menu.classList.remove("open");
+  });
 }
 
 function mealPlanIngredientTotals(weekKey = activeMealWeek) {
@@ -1270,14 +1359,15 @@ function renderRecipeCards(matches) {
   matches.slice(0, renderLimit).forEach((recipe) => {
     const card = recipeCardTemplate.content.firstElementChild.cloneNode(true);
     const matchLabel = card.querySelector(".match-label");
+    const planMenu = card.querySelector(".plan-menu");
+    const planMenuButton = card.querySelector(".plan-menu-button");
+    const planDayMenu = card.querySelector(".plan-day-menu");
     const editButton = card.querySelector(".edit-recipe");
     const deleteButton = card.querySelector(".delete-recipe");
+    const sourceButton = card.querySelector(".source-button");
     const sourceLink = card.querySelector(".source-link");
     const steps = card.querySelector(".steps");
     const instructionsToggle = card.querySelector(".instructions-toggle");
-    const planControls = card.querySelector(".plan-controls");
-    const planDaySelect = card.querySelector(".plan-day-select");
-    const planAddButton = card.querySelector(".plan-add-button");
     const progress = card.querySelector(".progress-track span");
     const hasLocalOverride = hasLocalRecipe(recipe.id);
     const instructionText = recipe.steps || "No steps saved yet.";
@@ -1285,27 +1375,36 @@ function renderRecipeCards(matches) {
     const canExpandInstructions = instructionText.length > instructionPreviewLength;
     const activeDay = mealDays.find((day) => day.key === activeMealDay);
 
-    if (activeSidebarMode !== "meal" && hasLocalOverride) {
-      card.classList.add("custom-recipe");
-      deleteButton.setAttribute("aria-label", `Remove local edit for ${recipe.name}`);
-      deleteButton.addEventListener("click", () => deleteRecipe(recipe.id));
-    }
+    if (activeSidebarMode !== "meal" && hasLocalOverride) card.classList.add("custom-recipe");
+
+    deleteButton.setAttribute("aria-label", `Delete ${recipe.name}`);
+    deleteButton.addEventListener("click", () => deleteRecipe(recipe));
 
     editButton.setAttribute("aria-label", `Edit ${recipe.name}`);
     editButton.addEventListener("click", () => startRecipeEdit(recipe));
 
+    planMenuButton.setAttribute("aria-label", `Add ${recipe.name} to meal plan`);
+    planMenuButton.addEventListener("click", (event) => {
+      event.stopPropagation();
+      const willOpen = !planMenu.classList.contains("open");
+      closePlanMenus(planMenu);
+      planMenu.classList.toggle("open", willOpen);
+    });
+
     mealDays.forEach((day) => {
-      const option = document.createElement("option");
-      option.value = day.key;
-      option.textContent = day.short;
-      option.selected = day.key === activeMealDay;
-      planDaySelect.append(option);
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = day.label;
+      button.setAttribute("role", "menuitem");
+      button.addEventListener("click", (event) => {
+        event.stopPropagation();
+        activeMealDay = day.key;
+        addRecipeToMealDay(day.key, recipe);
+        closePlanMenus();
+      });
+      planDayMenu.append(button);
     });
-    planAddButton.addEventListener("click", () => {
-      activeMealDay = planDaySelect.value;
-      addRecipeToMealDay(planDaySelect.value, recipe);
-    });
-    if (activeSidebarMode === "meal") planControls.classList.add("hidden");
+    if (activeSidebarMode === "meal") planMenu.classList.add("hidden");
 
     card.querySelector(".type-pill").textContent = recipe.type;
     card.querySelector("h3").textContent = recipe.name;
@@ -1326,6 +1425,8 @@ function renderRecipeCards(matches) {
     if (recipe.sourceUrl) {
       card.classList.add("has-source");
       sourceLink.href = recipe.sourceUrl;
+      sourceButton.href = recipe.sourceUrl;
+      sourceButton.setAttribute("aria-label", `Open source for ${recipe.name}`);
     }
 
     if (activeSidebarMode === "meal") {
@@ -1468,6 +1569,8 @@ clearIngredientsButton.addEventListener("click", () => {
   render();
 });
 
+document.addEventListener("click", () => closePlanMenus());
+
 document.querySelectorAll(".sidebar-mode").forEach((button) => {
   button.addEventListener("click", () => {
     activeSidebarMode = button.dataset.sidebarMode;
@@ -1571,10 +1674,12 @@ recipeForm.addEventListener("submit", async (event) => {
     sourceUrl: recipeSourceUrl.value.trim()
   };
 
+  const isEditing = Boolean(editingRecipeId);
+  const previousRecipe = isEditing ? allRecipes().find((item) => item.id === recipe.id) || null : null;
   customRecipes = customRecipes.filter((item) => item.id !== recipe.id);
   customRecipes.push(recipe);
+  deletedRecipeIds = deletedRecipeIds.filter((recipeId) => recipeId !== recipe.id);
 
-  const isEditing = Boolean(editingRecipeId);
   resetRecipeForm();
   saveState();
   render();
@@ -1583,7 +1688,11 @@ recipeForm.addEventListener("submit", async (event) => {
     isEditing ? "Saved your recipe correction." : "Saved recipe. Sending structured capture to TGB bridge...",
     "neutral"
   );
-  if (isEditing) return;
+  if (isEditing) {
+    const tgbResult = await syncRecipeEventToTgb("updated", recipe, previousRecipe);
+    setFormStatus(tgbResult.message || "Saved your recipe correction and queued it for TGB.", "success");
+    return;
+  }
 
   const tgbResult = await ingestRecipeIntoTgb(recipe);
   setFormStatus(tgbResult.message || "Saved and queued for TGB.", "success");

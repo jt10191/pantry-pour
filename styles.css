@@ -731,6 +731,8 @@ svg {
 .card-actions {
   display: inline-flex;
   align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   gap: 7px;
 }
 
@@ -767,6 +769,8 @@ svg {
   color: #e2a084;
 }
 
+.plan-menu-button,
+.source-button,
 .edit-recipe,
 .delete-recipe {
   display: inline-grid;
@@ -776,6 +780,59 @@ svg {
   border-radius: 8px;
 }
 
+.plan-menu {
+  position: relative;
+}
+
+.plan-menu-button {
+  border: 1px solid rgba(214, 173, 100, 0.35);
+  background: rgba(214, 173, 100, 0.12);
+  color: #f0cf8f;
+}
+
+.plan-day-menu {
+  position: absolute;
+  z-index: 5;
+  top: calc(100% + 8px);
+  right: 0;
+  display: none;
+  min-width: 150px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #151a14;
+  padding: 6px;
+  box-shadow: var(--shadow);
+}
+
+.plan-menu.open .plan-day-menu {
+  display: grid;
+}
+
+.plan-day-menu button {
+  min-height: 34px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  padding: 0 10px;
+  color: var(--ink);
+  font-size: 0.84rem;
+  font-weight: 800;
+  text-align: left;
+}
+
+.plan-day-menu button:hover {
+  background: rgba(165, 189, 120, 0.16);
+  color: #d9e9b8;
+}
+
+.source-button {
+  display: none;
+  border: 1px solid rgba(214, 173, 100, 0.35);
+  background: rgba(214, 173, 100, 0.12);
+  color: #f0cf8f;
+  text-decoration: none;
+}
+
 .edit-recipe {
   border: 1px solid rgba(165, 189, 120, 0.35);
   background: rgba(165, 189, 120, 0.12);
@@ -783,20 +840,21 @@ svg {
 }
 
 .delete-recipe {
-  display: none;
   border: 1px solid rgba(183, 102, 74, 0.35);
   background: rgba(183, 102, 74, 0.12);
   color: #e2a084;
 }
 
+.recipe-card.has-source .source-button {
+  display: inline-grid;
+}
+
+.plan-menu-button svg,
+.source-button svg,
 .edit-recipe svg,
 .delete-recipe svg {
   width: 16px;
   height: 16px;
-}
-
-.recipe-card.custom-recipe .delete-recipe {
-  display: inline-grid;
 }
 
 .recipe-card h3 {
@@ -857,30 +915,6 @@ li {
   content: "None";
   color: var(--muted);
   font-size: 0.9rem;
-}
-
-.plan-controls {
-  display: grid;
-  grid-template-columns: minmax(82px, 0.55fr) 1fr;
-  gap: 8px;
-  margin: 0 0 12px;
-}
-
-.plan-day-select,
-.plan-add-button {
-  min-height: 34px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--surface-soft);
-  color: var(--ink);
-  font-size: 0.82rem;
-  font-weight: 800;
-}
-
-.plan-add-button {
-  border-color: rgba(165, 189, 120, 0.38);
-  background: rgba(165, 189, 120, 0.12);
-  color: #d9e9b8;
 }
 
 .steps {
