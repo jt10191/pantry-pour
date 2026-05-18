@@ -107,17 +107,77 @@ const quickIngredients = [
 const storeKeys = {
   ingredients: "pantry-pour-ingredients",
   recipes: "pantry-pour-recipes",
+  mealPlan: "pantry-pour-meal-plan",
+  shoppingChecks: "pantry-pour-shopping-checks",
   tgbQueue: "pantry-pour-tgb-queue"
 };
 
+const mealDays = [
+  { key: "sunday", label: "Sunday", short: "Sun" },
+  { key: "monday", label: "Monday", short: "Mon" },
+  { key: "tuesday", label: "Tuesday", short: "Tue" },
+  { key: "wednesday", label: "Wednesday", short: "Wed" },
+  { key: "thursday", label: "Thursday", short: "Thu" },
+  { key: "friday", label: "Friday", short: "Fri" },
+  { key: "saturday", label: "Saturday", short: "Sat" }
+];
+
+const grocerySections = [
+  {
+    name: "Produce",
+    patterns: [
+      /apple|avocado|arugula|asparagus|basil|beet|berry|broccoli|cabbage|carrot|celery|cilantro|cucumber|garlic|ginger|greens|herb|kale|leek|lemon|lettuce|lime|mint|mushroom|onion|orange|parsley|pepper|potato|radish|spinach|tomato|zucchini/
+    ]
+  },
+  {
+    name: "Meat & Seafood",
+    patterns: [/anchov|bacon|beef|chicken|clam|cod|fish|ham|lamb|mackerel|mussel|oyster|pork|salmon|sardine|sausage|seafood|shrimp|steak|turkey|tuna/]
+  },
+  { name: "Dairy & Eggs", patterns: [/butter|cheddar|cheese|cream|egg|feta|kefir|milk|mozzarella|parmesan|ricotta|yogurt/] },
+  { name: "Bakery", patterns: [/bagel|bread|bun|pita|roll|tortilla/] },
+  { name: "Pantry", patterns: [/bean|broth|caper|cereal|chia|chickpea|flax|flour|honey|lentil|miso|mustard|nut|oil|olive|pasta|peanut|quinoa|rice|salt|sauce|seed|soy|spice|sugar|syrup|tempeh|tofu|vinegar/] },
+  { name: "Frozen", patterns: [/frozen|ice cream|peas/] },
+  { name: "Beverages", patterns: [/beer|bitters|gin|green tea|juice|liqueur|matcha|rum|soda|tea|tequila|vermouth|vodka|whiskey|wine/] }
+];
+
+const guidedFoodGroups = [
+  { weight: 2, patterns: [/soy|tofu|edamame|tempeh|miso|natto/] },
+  { weight: 2, patterns: [/green tea|matcha|oolong|black tea/] },
+  { weight: 2, patterns: [/tomato|lycopene/] },
+  { weight: 2, patterns: [/broccoli|brussels sprout|cauliflower|cabbage|kale|bok choy|watercress|cruciferous/] },
+  { weight: 2, patterns: [/shiitake|maitake|reishi|oyster mushroom|white button|mushroom/] },
+  { weight: 2, patterns: [/salmon|mackerel|sardine|anchov|oyster|mussel|clam|shrimp|cod|tuna|fish|seafood/] },
+  { weight: 2, patterns: [/blueberr|strawberr|blackberr|cranberr|berry|berries|pomegranate|apple|kiwi|citrus|orange|lemon|lime/] },
+  { weight: 2, patterns: [/garlic|ginger|turmeric|thyme|rosemary|sage|oregano/] },
+  { weight: 1.5, patterns: [/lentil|chickpea|bean|almond|walnut|pumpkin seed|chia|flax/] },
+  { weight: 1.5, patterns: [/yogurt|kefir|sauerkraut|kimchi|fermented/] },
+  { weight: 1.5, patterns: [/spinach|arugula|swiss chard|leafy green|greens/] },
+  { weight: 1, patterns: [/extra virgin olive oil|olive oil|dark chocolate|cacao/] }
+];
+
+const guidedStyleGroups = [
+  { weight: 1, patterns: [/mediterranean|chinese|west coast|grain bowl|salad|soup|stir[- ]?fry|stir fried/] },
+  { weight: 1, patterns: [/braised|grilled|poached|roasted|sauteed|saut.ed|steamed|baked/] },
+  { weight: 1, patterns: [/vegetable|vegetarian|veggie|whole grain|quinoa|barley|farro|brown rice/] }
+];
+
+const guidedDessertPattern = /cake|cookie|pie|brownie|pudding|frosting|icing|sundae|ice cream|sorbet|candy|caramel|dessert/;
+
 let ingredients = loadList(storeKeys.ingredients);
 let customRecipes = loadRecipes();
+let mealPlans = loadMealPlans();
+let shoppingChecks = loadShoppingChecks();
 let tgbRecipes = [...fallbackRecipes];
 let recipeSourceLabel = "sample";
 let activeFilter = "all";
 let searchTerm = "";
 let editingRecipeId = null;
 let expandedRecipeIds = new Set();
+let activeSidebarMode = "search";
+let activeMealWeek = currentWeekKey();
+let activeMealDay = mealDays[new Date().getDay()].key;
+let activeMealRightView = "day";
+let shoppingSort = "alpha";
 const renderLimit = 160;
 const instructionPreviewLength = 700;
 
@@ -126,6 +186,18 @@ const ingredientInput = document.querySelector("#ingredientInput");
 const ingredientChips = document.querySelector("#ingredientChips");
 const quickIngredientsNode = document.querySelector("#quickIngredients");
 const clearIngredientsButton = document.querySelector("#clearIngredients");
+const searchPanel = document.querySelector("#searchPanel");
+const mealPlanPanel = document.querySelector("#mealPlanPanel");
+const mealPlanAddForm = document.querySelector("#mealPlanAddForm");
+const mealRecipeInput = document.querySelector("#mealRecipeInput");
+const recipeTitleOptions = document.querySelector("#recipeTitleOptions");
+const mealWeekInput = document.querySelector("#mealWeekInput");
+const mealDayViewButton = document.querySelector("#mealDayViewButton");
+const mealShoppingViewButton = document.querySelector("#mealShoppingViewButton");
+const mealSummaryViewButton = document.querySelector("#mealSummaryViewButton");
+const weekPlanRows = document.querySelector("#weekPlanRows");
+const mealPlanIngredients = document.querySelector("#mealPlanIngredients");
+const mealPlanStatus = document.querySelector("#mealPlanStatus");
 const recipeForm = document.querySelector("#recipeForm");
 const toggleRecipeFormButton = document.querySelector("#toggleRecipeForm");
 const recipeName = document.querySelector("#recipeName");
@@ -144,6 +216,11 @@ const readyCount = document.querySelector("#readyCount");
 const closeCount = document.querySelector("#closeCount");
 const ingredientCount = document.querySelector("#ingredientCount");
 const recipeCount = document.querySelector("#recipeCount");
+const readyLabel = document.querySelector("#readyLabel");
+const closeLabel = document.querySelector("#closeLabel");
+const ingredientLabel = document.querySelector("#ingredientLabel");
+const recipeLabel = document.querySelector("#recipeLabel");
+const resultsTitle = document.querySelector("#resultsTitle");
 const resultNote = document.querySelector("#resultNote");
 const matchHeadline = document.querySelector("#matchHeadline");
 
@@ -237,9 +314,93 @@ function loadRecipes() {
   }
 }
 
+function currentWeekKey(date = new Date()) {
+  const value = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const day = value.getUTCDay() || 7;
+  value.setUTCDate(value.getUTCDate() + 4 - day);
+  const yearStart = new Date(Date.UTC(value.getUTCFullYear(), 0, 1));
+  const week = Math.ceil(((value - yearStart) / 86400000 + 1) / 7);
+  return `${value.getUTCFullYear()}-W${String(week).padStart(2, "0")}`;
+}
+
+function weekStartDate(weekKey) {
+  const [yearText, weekText] = weekKey.split("-W");
+  const year = Number(yearText);
+  const week = Number(weekText);
+  const janFourth = new Date(Date.UTC(year, 0, 4));
+  const day = janFourth.getUTCDay() || 7;
+  const monday = new Date(janFourth);
+  monday.setUTCDate(janFourth.getUTCDate() - day + 1 + (week - 1) * 7);
+  return monday;
+}
+
+function weekKeyFromStartDate(date) {
+  return currentWeekKey(new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+}
+
+function previousWeekKeys(count = 13) {
+  const start = weekStartDate(currentWeekKey());
+  return Array.from({ length: count }, (_, index) => {
+    const week = new Date(start);
+    week.setUTCDate(start.getUTCDate() - index * 7);
+    return weekKeyFromStartDate(week);
+  });
+}
+
+function formatWeekLabel(weekKey) {
+  const start = weekStartDate(weekKey);
+  const end = new Date(start);
+  end.setUTCDate(start.getUTCDate() + 6);
+  const startText = start.toLocaleDateString(undefined, { month: "short", day: "numeric", timeZone: "UTC" });
+  const endText = end.toLocaleDateString(undefined, { month: "short", day: "numeric", timeZone: "UTC" });
+  return `${weekKey.replace("-W", " week ")} (${startText}-${endText})`;
+}
+
+function emptyMealPlan() {
+  return Object.fromEntries(mealDays.map((day) => [day.key, []]));
+}
+
+function isSingleWeekPlan(value) {
+  return value && typeof value === "object" && mealDays.some((day) => Array.isArray(value[day.key]));
+}
+
+function normalizeWeekPlan(value) {
+  const plan = emptyMealPlan();
+  mealDays.forEach((day) => {
+    plan[day.key] = Array.isArray(value?.[day.key]) ? value[day.key].filter(Boolean) : [];
+  });
+  return plan;
+}
+
+function loadMealPlans() {
+  try {
+    const value = JSON.parse(localStorage.getItem(storeKeys.mealPlan) || "{}");
+    if (isSingleWeekPlan(value)) return { [currentWeekKey()]: normalizeWeekPlan(value) };
+
+    return Object.fromEntries(
+      Object.entries(value || {})
+        .filter(([weekKey]) => /^\d{4}-W\d{2}$/.test(weekKey))
+        .map(([weekKey, plan]) => [weekKey, normalizeWeekPlan(plan)])
+    );
+  } catch {
+    return {};
+  }
+}
+
+function loadShoppingChecks() {
+  try {
+    const value = JSON.parse(localStorage.getItem(storeKeys.shoppingChecks) || "{}");
+    return value && typeof value === "object" ? value : {};
+  } catch {
+    return {};
+  }
+}
+
 function saveState() {
   localStorage.setItem(storeKeys.ingredients, JSON.stringify(ingredients));
   localStorage.setItem(storeKeys.recipes, JSON.stringify(customRecipes));
+  localStorage.setItem(storeKeys.mealPlan, JSON.stringify(mealPlans));
+  localStorage.setItem(storeKeys.shoppingChecks, JSON.stringify(shoppingChecks));
 }
 
 function saveTgbQueue(recipe, content, status) {
@@ -301,6 +462,130 @@ function ingredientDisplayMap(recipe, canonicalIngredients) {
   return displayByCanonical;
 }
 
+const fractionCharacters = {
+  "¼": 0.25,
+  "½": 0.5,
+  "¾": 0.75,
+  "⅓": 1 / 3,
+  "⅔": 2 / 3,
+  "⅛": 0.125,
+  "⅜": 0.375,
+  "⅝": 0.625,
+  "⅞": 0.875
+};
+
+const unitAliases = {
+  c: "cup",
+  cup: "cup",
+  cups: "cup",
+  tablespoon: "tbsp",
+  tablespoons: "tbsp",
+  tbsp: "tbsp",
+  tbs: "tbsp",
+  teaspoon: "tsp",
+  teaspoons: "tsp",
+  tsp: "tsp",
+  ounce: "oz",
+  ounces: "oz",
+  oz: "oz",
+  pound: "lb",
+  pounds: "lb",
+  lb: "lb",
+  lbs: "lb",
+  gram: "g",
+  grams: "g",
+  g: "g",
+  kilogram: "kg",
+  kilograms: "kg",
+  kg: "kg",
+  milliliter: "ml",
+  milliliters: "ml",
+  ml: "ml",
+  liter: "l",
+  liters: "l",
+  l: "l",
+  quart: "qt",
+  quarts: "qt",
+  qt: "qt",
+  pint: "pt",
+  pints: "pt",
+  pt: "pt",
+  can: "can",
+  cans: "can",
+  package: "package",
+  packages: "package",
+  pkg: "package",
+  jar: "jar",
+  jars: "jar",
+  bottle: "bottle",
+  bottles: "bottle",
+  dash: "dash",
+  dashes: "dash",
+  pinch: "pinch",
+  pinches: "pinch",
+  slice: "slice",
+  slices: "slice",
+  clove: "clove",
+  cloves: "clove",
+  sprig: "sprig",
+  sprigs: "sprig",
+  bunch: "bunch",
+  bunches: "bunch"
+};
+
+function parseQuantity(value) {
+  const trimmed = value.trim().toLowerCase();
+  if (trimmed === "a" || trimmed === "an") return 1;
+  if (fractionCharacters[trimmed]) return fractionCharacters[trimmed];
+
+  const normalized = trimmed.replace(/\s*\/\s*/g, "/");
+  const mixed = normalized.match(/^(\d+(?:\.\d+)?)\s+(\d+)\/(\d+)$/);
+  if (mixed) return Number(mixed[1]) + Number(mixed[2]) / Number(mixed[3]);
+
+  const fraction = normalized.match(/^(\d+)\/(\d+)$/);
+  if (fraction) return Number(fraction[1]) / Number(fraction[2]);
+
+  const decimal = Number(normalized);
+  return Number.isFinite(decimal) ? decimal : null;
+}
+
+function parsePlanIngredient(line, canonical) {
+  const normalizedLine = line
+    .replace(/([¼½¾⅓⅔⅛⅜⅝⅞])/g, " $1 ")
+    .replace(/\s+/g, " ")
+    .trim();
+  const match = normalizedLine.match(
+    /^(?:about|approximately|approx\.?)?\s*((?:\d+(?:\.\d+)?\s+)?\d+\s*\/\s*\d+|\d+(?:\.\d+)?|a|an|[¼½¾⅓⅔⅛⅜⅝⅞])\s*([a-zA-Z]+)?\b/
+  );
+
+  if (!match) return { canonical, raw: line, quantity: null, unit: null };
+
+  const quantity = parseQuantity(match[1]);
+  const unit = unitAliases[normalize(match[2] || "")] || null;
+  return { canonical, raw: line, quantity, unit };
+}
+
+function formatQuantity(value) {
+  if (Math.abs(value - Math.round(value)) < 0.001) return String(Math.round(value));
+  const whole = Math.floor(value);
+  const fraction = value - whole;
+  const common = [
+    [0.25, "1/4"],
+    [1 / 3, "1/3"],
+    [0.5, "1/2"],
+    [2 / 3, "2/3"],
+    [0.75, "3/4"]
+  ].find(([decimal]) => Math.abs(fraction - decimal) < 0.03);
+  if (common) return whole ? `${whole} ${common[1]}` : common[1];
+  return String(Math.round(value * 10) / 10);
+}
+
+function displayUnit(unit, quantity) {
+  if (!unit) return "";
+  if (["tbsp", "tsp", "oz", "g", "kg", "ml", "l", "qt", "pt"].includes(unit)) return unit;
+  return Math.abs(quantity - 1) < 0.001 ? unit : `${unit}s`;
+}
+
 function addIngredients(values) {
   const next = new Set(ingredients);
   values.map(normalize).filter(Boolean).forEach((item) => next.add(item));
@@ -317,12 +602,83 @@ function removeIngredient(item) {
 
 function deleteRecipe(recipeId) {
   customRecipes = customRecipes.filter((recipe) => recipe.id !== recipeId);
+  Object.keys(mealPlans).forEach((weekKey) => {
+    mealDays.forEach((day) => {
+      mealPlans[weekKey][day.key] = mealPlans[weekKey][day.key].filter((plannedId) => plannedId !== recipeId);
+    });
+  });
   saveState();
   render();
 }
 
 function hasLocalRecipe(recipeId) {
   return customRecipes.some((recipe) => recipe.id === recipeId);
+}
+
+function setMealPlanStatus(message, tone = "neutral") {
+  mealPlanStatus.textContent = message;
+  mealPlanStatus.dataset.tone = tone;
+}
+
+function findRecipeByTitle(title) {
+  const wanted = normalize(title);
+  return allRecipes().find((recipe) => normalize(recipe.name) === wanted) || null;
+}
+
+function recipesById() {
+  const byId = new Map();
+  allRecipes().forEach((recipe) => byId.set(recipe.id, recipe));
+  return byId;
+}
+
+function currentMealPlan() {
+  if (!mealPlans[activeMealWeek]) mealPlans[activeMealWeek] = emptyMealPlan();
+  return mealPlans[activeMealWeek];
+}
+
+function plannedRecipesForDay(dayKey, weekKey = activeMealWeek) {
+  const byId = recipesById();
+  const plan = mealPlans[weekKey] || emptyMealPlan();
+  return (plan[dayKey] || []).map((recipeId) => byId.get(recipeId)).filter(Boolean);
+}
+
+function plannedRecipeIdsForWeek(weekKey = activeMealWeek) {
+  const plan = mealPlans[weekKey] || emptyMealPlan();
+  return mealDays.flatMap((day) => plan[day.key] || []);
+}
+
+function addRecipeToMealDay(dayKey, recipe) {
+  const plan = currentMealPlan();
+  const current = new Set(plan[dayKey] || []);
+  if (current.has(recipe.id)) {
+    setMealPlanStatus(`${recipe.name} is already on ${mealDays.find((day) => day.key === dayKey).label}.`, "warning");
+    return;
+  }
+
+  mealPlans = {
+    ...mealPlans,
+    [activeMealWeek]: {
+      ...plan,
+      [dayKey]: [...current, recipe.id]
+    }
+  };
+  saveState();
+  activeMealRightView = "day";
+  setMealPlanStatus(`Added to ${mealDays.find((day) => day.key === dayKey).label}.`, "success");
+  render();
+}
+
+function removeRecipeFromMealDay(dayKey, recipeId) {
+  const plan = currentMealPlan();
+  mealPlans = {
+    ...mealPlans,
+    [activeMealWeek]: {
+      ...plan,
+      [dayKey]: (plan[dayKey] || []).filter((plannedId) => plannedId !== recipeId)
+    }
+  };
+  saveState();
+  render();
 }
 
 function setFormStatus(message, tone = "neutral") {
@@ -441,45 +797,87 @@ async function loadTgbRecipes() {
   render();
 }
 
-function getMatches() {
+function decorateRecipe(recipe) {
   const pantry = new Set(ingredients);
+  const recipeIngredients = (recipe.ingredients || []).map(normalize).filter(Boolean);
+  const displayByCanonical = ingredientDisplayMap(recipe, recipeIngredients);
+  const have = recipeIngredients.filter((item) => pantry.has(item));
+  const need = recipeIngredients.filter((item) => !pantry.has(item));
+  const score = recipeIngredients.length ? have.length / recipeIngredients.length : 0;
+  const ingredientDisplay = recipeIngredients.map((item) => ({
+    label: displayByCanonical.get(item) || titleCase(item),
+    status: pantry.has(item) ? "have" : "need"
+  }));
 
+  return {
+    ...recipe,
+    ingredients: recipeIngredients,
+    have,
+    need,
+    ingredientDisplay,
+    haveDisplay: have.map((item) => displayByCanonical.get(item) || titleCase(item)),
+    needDisplay: need.map((item) => displayByCanonical.get(item) || titleCase(item)),
+    score,
+    isReady: need.length === 0,
+    isClose: have.length > 0 && need.length > 0 && need.length <= 2
+  };
+}
+
+function recipeMatchesFilters(recipe, includeType = true) {
+  if (includeType && activeFilter === "guided" && !isGuidedRecipe(recipe)) return false;
+  if (includeType && activeFilter !== "all" && activeFilter !== "guided" && recipe.type !== activeFilter) return false;
+  if (!searchTerm) return true;
+  const haystack = [recipe.name, recipe.type, ...recipe.ingredients].join(" ").toLowerCase();
+  return haystack.includes(searchTerm);
+}
+
+function guidedRecipeHaystack(recipe) {
+  return [recipe.name, recipe.type, recipe.steps, ...(recipe.ingredients || []), ...recipeDisplayIngredients(recipe)]
+    .join(" ")
+    .toLowerCase();
+}
+
+function guidedScore(recipe) {
+  if (recipe.type !== "food") return 0;
+
+  const haystack = guidedRecipeHaystack(recipe);
+  const defenseFoodScore = guidedFoodGroups.reduce(
+    (total, group) => total + (group.patterns.some((pattern) => pattern.test(haystack)) ? group.weight : 0),
+    0
+  );
+  const styleScore = guidedStyleGroups.reduce(
+    (total, group) => total + (group.patterns.some((pattern) => pattern.test(haystack)) ? group.weight : 0),
+    0
+  );
+  const score = defenseFoodScore + styleScore;
+
+  if (guidedDessertPattern.test(haystack) && defenseFoodScore < 5) return 0;
+  return score;
+}
+
+function isGuidedRecipe(recipe) {
+  return guidedScore(recipe) >= 3;
+}
+
+function getMatches() {
   return allRecipes()
-    .map((recipe) => {
-      const recipeIngredients = (recipe.ingredients || []).map(normalize).filter(Boolean);
-      const displayByCanonical = ingredientDisplayMap(recipe, recipeIngredients);
-      const have = recipeIngredients.filter((item) => pantry.has(item));
-      const need = recipeIngredients.filter((item) => !pantry.has(item));
-      const score = recipeIngredients.length ? have.length / recipeIngredients.length : 0;
-      const ingredientDisplay = recipeIngredients.map((item) => ({
-        label: displayByCanonical.get(item) || titleCase(item),
-        status: pantry.has(item) ? "have" : "need"
-      }));
-
-      return {
-        ...recipe,
-        ingredients: recipeIngredients,
-        have,
-        need,
-        ingredientDisplay,
-        haveDisplay: have.map((item) => displayByCanonical.get(item) || titleCase(item)),
-        needDisplay: need.map((item) => displayByCanonical.get(item) || titleCase(item)),
-        score,
-        isReady: need.length === 0,
-        isClose: have.length > 0 && need.length > 0 && need.length <= 2
-      };
-    })
-    .filter((recipe) => activeFilter === "all" || recipe.type === activeFilter)
-    .filter((recipe) => {
-      if (!searchTerm) return true;
-      const haystack = [recipe.name, recipe.type, ...recipe.ingredients].join(" ").toLowerCase();
-      return haystack.includes(searchTerm);
-    })
+    .map(decorateRecipe)
+    .filter(recipeMatchesFilters)
     .sort((a, b) => {
+      if (activeFilter === "guided") {
+        const guidedDelta = guidedScore(b) - guidedScore(a);
+        if (guidedDelta) return guidedDelta;
+      }
       if (b.isReady !== a.isReady) return Number(b.isReady) - Number(a.isReady);
       if (b.score !== a.score) return b.score - a.score;
       return a.need.length - b.need.length || a.name.localeCompare(b.name);
     });
+}
+
+function getMealPlanMatches() {
+  return plannedRecipesForDay(activeMealDay)
+    .map(decorateRecipe)
+    .filter((recipe) => recipeMatchesFilters(recipe, false));
 }
 
 function makeIngredientItems(list, node) {
@@ -505,6 +903,306 @@ function toggleInstructions(recipeId) {
     expandedRecipeIds.add(recipeId);
   }
   render();
+}
+
+function mealPlanIngredientTotals(weekKey = activeMealWeek) {
+  const totals = new Map();
+  const byId = recipesById();
+
+  plannedRecipeIdsForWeek(weekKey).forEach((recipeId) => {
+    const recipe = byId.get(recipeId);
+    if (!recipe) return;
+
+    const canonicalIngredients = (recipe.ingredients || []).map(normalize).filter(Boolean);
+    const displayByCanonical = ingredientDisplayMap(recipe, canonicalIngredients);
+
+    canonicalIngredients.forEach((ingredient) => {
+      const raw = displayByCanonical.get(ingredient) || titleCase(ingredient);
+      const parsed = parsePlanIngredient(raw, ingredient);
+      const current =
+        totals.get(ingredient) || {
+          key: ingredient,
+          label: titleCase(ingredient),
+          raw,
+          quantity: 0,
+          unit: parsed.unit,
+          count: 0,
+          raws: [],
+          mixed: false
+        };
+
+      if (parsed.quantity && !current.mixed) {
+        if (current.count === 0 || current.unit === parsed.unit) {
+          current.quantity += parsed.quantity;
+          current.unit = parsed.unit;
+        } else {
+          current.mixed = true;
+        }
+      } else {
+        current.mixed = true;
+      }
+
+      current.count += 1;
+      if (!current.raws.includes(raw)) current.raws.push(raw);
+      totals.set(ingredient, current);
+    });
+  });
+
+  return [...totals.values()].sort((a, b) => a.label.localeCompare(b.label));
+}
+
+function formatMealIngredientTotal(item) {
+  if (!item.mixed && item.quantity > 0) {
+    const unit = displayUnit(item.unit, item.quantity);
+    return [formatQuantity(item.quantity), unit, item.label].filter(Boolean).join(" ");
+  }
+
+  if (item.raws?.length > 1) return item.raws.join(" + ");
+  return item.count > 1 ? `${item.count} x ${item.raw}` : item.raw;
+}
+
+function grocerySectionFor(item) {
+  const haystack = `${item.label || ""} ${item.raw || ""} ${item.key || ""}`.toLowerCase();
+  return grocerySections.find((section) => section.patterns.some((pattern) => pattern.test(haystack)))?.name || "Other";
+}
+
+function shoppingCheckKey(value) {
+  return `${activeMealWeek}:${normalize(value).replace(/[^a-z0-9]+/g, "-")}`;
+}
+
+function isShoppingItemChecked(value) {
+  return Boolean(shoppingChecks[shoppingCheckKey(value)]);
+}
+
+function setShoppingItemChecked(value, checked) {
+  const key = shoppingCheckKey(value);
+  shoppingChecks = { ...shoppingChecks };
+  if (checked) {
+    shoppingChecks[key] = true;
+  } else {
+    delete shoppingChecks[key];
+  }
+  saveState();
+}
+
+function createShoppingCheckItem(text, meta = "") {
+  const label = document.createElement("label");
+  label.className = "shopping-check-item";
+
+  const checkbox = document.createElement("input");
+  checkbox.type = "checkbox";
+  checkbox.checked = isShoppingItemChecked(`${meta} ${text}`);
+  checkbox.addEventListener("change", () => setShoppingItemChecked(`${meta} ${text}`, checkbox.checked));
+
+  const content = document.createElement("span");
+  content.textContent = text;
+
+  label.append(checkbox, content);
+  return label;
+}
+
+function plannedRecipeEntriesForWeek(weekKey = activeMealWeek) {
+  return mealDays.flatMap((day) =>
+    plannedRecipesForDay(day.key, weekKey).map((recipe) => ({
+      day,
+      recipe
+    }))
+  );
+}
+
+function renderShoppingList() {
+  recipeGrid.innerHTML = "";
+  const shell = document.createElement("section");
+  shell.className = "shopping-list-view";
+
+  const controls = document.createElement("div");
+  controls.className = "shopping-sort";
+  [
+    ["alpha", "A-Z"],
+    ["meal", "By meal"],
+    ["section", "By section"]
+  ].forEach(([value, label]) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = `shopping-sort-button${shoppingSort === value ? " active" : ""}`;
+    button.textContent = label;
+    button.addEventListener("click", () => {
+      shoppingSort = value;
+      render();
+    });
+    controls.append(button);
+  });
+  shell.append(controls);
+  recipeGrid.append(shell);
+
+  if (shoppingSort === "meal") {
+    const entries = plannedRecipeEntriesForWeek();
+    if (!entries.length) {
+      const empty = document.createElement("div");
+      empty.className = "empty-state";
+      empty.innerHTML = "<h3>No dinners planned</h3><p>Add recipes to the week to build a shopping list.</p>";
+      shell.append(empty);
+      return;
+    }
+
+    entries.forEach(({ day, recipe }) => {
+      const group = document.createElement("article");
+      group.className = "shopping-group";
+      const heading = document.createElement("h3");
+      heading.textContent = `${day.short}: ${recipe.name}`;
+      group.append(heading);
+      recipeDisplayIngredients(recipe).forEach((ingredient) => {
+        group.append(createShoppingCheckItem(ingredient, `${day.key}-${recipe.id}`));
+      });
+      shell.append(group);
+    });
+  } else if (shoppingSort === "section") {
+    const grouped = new Map();
+    mealPlanIngredientTotals().forEach((item) => {
+      const section = grocerySectionFor(item);
+      if (!grouped.has(section)) grouped.set(section, []);
+      grouped.get(section).push(item);
+    });
+
+    if (!grouped.size) {
+      const empty = document.createElement("div");
+      empty.className = "empty-state";
+      empty.innerHTML = "<h3>No ingredients yet</h3><p>Add recipes to the week to build a shopping list.</p>";
+      shell.append(empty);
+      return;
+    }
+
+    [...grouped.entries()].sort(([a], [b]) => a.localeCompare(b)).forEach(([section, items]) => {
+      const group = document.createElement("article");
+      group.className = "shopping-group";
+      const heading = document.createElement("h3");
+      heading.textContent = section;
+      group.append(heading);
+      items
+        .sort((a, b) => a.label.localeCompare(b.label))
+        .forEach((item) => group.append(createShoppingCheckItem(formatMealIngredientTotal(item), section)));
+      shell.append(group);
+    });
+  } else {
+    const totals = mealPlanIngredientTotals();
+    if (!totals.length) {
+      const empty = document.createElement("div");
+      empty.className = "empty-state";
+      empty.innerHTML = "<h3>No ingredients yet</h3><p>Add recipes to the week to build a shopping list.</p>";
+      shell.append(empty);
+      return;
+    }
+
+    const group = document.createElement("article");
+    group.className = "shopping-group";
+    totals.forEach((item) => group.append(createShoppingCheckItem(formatMealIngredientTotal(item), "alpha")));
+    shell.append(group);
+  }
+
+}
+
+function renderRecipeTitleOptions() {
+  recipeTitleOptions.innerHTML = "";
+  allRecipes()
+    .slice()
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .forEach((recipe) => {
+      const option = document.createElement("option");
+      option.value = recipe.name;
+      recipeTitleOptions.append(option);
+    });
+}
+
+function renderWeekPlanRows() {
+  weekPlanRows.innerHTML = "";
+  const plan = currentMealPlan();
+  const byId = recipesById();
+
+  mealDays.forEach((day) => {
+    const row = document.createElement("button");
+    row.className = `week-plan-row${day.key === activeMealDay ? " active" : ""}`;
+    row.type = "button";
+    row.setAttribute("aria-label", `Show ${day.label} dinners`);
+    row.addEventListener("click", () => {
+      activeMealDay = day.key;
+      activeMealRightView = "day";
+      render();
+    });
+
+    const label = document.createElement("span");
+    label.className = "week-plan-day";
+    label.textContent = day.short;
+
+    const titles = document.createElement("span");
+    titles.className = "week-plan-titles";
+    const recipes = (plan[day.key] || []).map((recipeId) => byId.get(recipeId)).filter(Boolean);
+    titles.textContent = recipes.length ? recipes.map((recipe) => recipe.name).join(", ") : "No dinner planned";
+
+    row.append(label, titles);
+    weekPlanRows.append(row);
+  });
+}
+
+function renderMealPlanIngredients() {
+  mealPlanIngredients.innerHTML = "";
+  const totals = mealPlanIngredientTotals();
+
+  if (!totals.length) {
+    const empty = document.createElement("li");
+    empty.className = "muted-text";
+    empty.textContent = "Add dinners to build the shopping list.";
+    mealPlanIngredients.append(empty);
+    return;
+  }
+
+  totals.forEach((item) => {
+    const li = document.createElement("li");
+    li.textContent = formatMealIngredientTotal(item);
+    mealPlanIngredients.append(li);
+  });
+}
+
+function renderMealPlanPanel() {
+  renderRecipeTitleOptions();
+  mealWeekInput.value = activeMealWeek;
+  mealDayViewButton.classList.toggle("active", activeMealRightView === "day");
+  mealShoppingViewButton.classList.toggle("active", activeMealRightView === "shopping");
+  mealSummaryViewButton.classList.toggle("active", activeMealRightView === "summary");
+  renderWeekPlanRows();
+  renderMealPlanIngredients();
+}
+
+function renderMealSummaryCards() {
+  recipeGrid.innerHTML = "";
+  previousWeekKeys().forEach((weekKey) => {
+    const card = document.createElement("article");
+    card.className = "meal-summary-card";
+
+    const heading = document.createElement("h3");
+    heading.textContent = formatWeekLabel(weekKey);
+    card.append(heading);
+
+    const list = document.createElement("div");
+    list.className = "meal-summary-days";
+
+    mealDays.forEach((day) => {
+      const row = document.createElement("div");
+      row.className = "meal-summary-day";
+
+      const label = document.createElement("span");
+      label.textContent = day.short;
+
+      const titles = document.createElement("p");
+      const recipes = plannedRecipesForDay(day.key, weekKey);
+      titles.textContent = recipes.length ? recipes.map((recipe) => recipe.name).join(", ") : "No dinner planned";
+
+      row.append(label, titles);
+      list.append(row);
+    });
+
+    card.append(list);
+    recipeGrid.append(card);
+  });
 }
 
 function renderIngredientChips() {
@@ -552,9 +1250,16 @@ function renderRecipeCards(matches) {
   recipeGrid.innerHTML = "";
 
   if (!matches.length) {
+    const day = mealDays.find((item) => item.key === activeMealDay);
     const empty = document.createElement("div");
     empty.className = "empty-state";
-    empty.innerHTML = `
+    empty.innerHTML =
+      activeSidebarMode === "meal"
+        ? `
+      <h3>No dinners planned for ${day.label}</h3>
+      <p>Add recipe titles in the meal plan panel, or choose another day.</p>
+    `
+        : `
       <h3>No recipes found</h3>
       <p>Try a different filter, search term, or add a custom recipe that fits your kitchen.</p>
     `;
@@ -570,13 +1275,17 @@ function renderRecipeCards(matches) {
     const sourceLink = card.querySelector(".source-link");
     const steps = card.querySelector(".steps");
     const instructionsToggle = card.querySelector(".instructions-toggle");
+    const planControls = card.querySelector(".plan-controls");
+    const planDaySelect = card.querySelector(".plan-day-select");
+    const planAddButton = card.querySelector(".plan-add-button");
     const progress = card.querySelector(".progress-track span");
     const hasLocalOverride = hasLocalRecipe(recipe.id);
     const instructionText = recipe.steps || "No steps saved yet.";
     const isInstructionsExpanded = expandedRecipeIds.has(recipe.id);
     const canExpandInstructions = instructionText.length > instructionPreviewLength;
+    const activeDay = mealDays.find((day) => day.key === activeMealDay);
 
-    if (hasLocalOverride) {
+    if (activeSidebarMode !== "meal" && hasLocalOverride) {
       card.classList.add("custom-recipe");
       deleteButton.setAttribute("aria-label", `Remove local edit for ${recipe.name}`);
       deleteButton.addEventListener("click", () => deleteRecipe(recipe.id));
@@ -584,6 +1293,19 @@ function renderRecipeCards(matches) {
 
     editButton.setAttribute("aria-label", `Edit ${recipe.name}`);
     editButton.addEventListener("click", () => startRecipeEdit(recipe));
+
+    mealDays.forEach((day) => {
+      const option = document.createElement("option");
+      option.value = day.key;
+      option.textContent = day.short;
+      option.selected = day.key === activeMealDay;
+      planDaySelect.append(option);
+    });
+    planAddButton.addEventListener("click", () => {
+      activeMealDay = planDaySelect.value;
+      addRecipeToMealDay(planDaySelect.value, recipe);
+    });
+    if (activeSidebarMode === "meal") planControls.classList.add("hidden");
 
     card.querySelector(".type-pill").textContent = recipe.type;
     card.querySelector("h3").textContent = recipe.name;
@@ -606,7 +1328,13 @@ function renderRecipeCards(matches) {
       sourceLink.href = recipe.sourceUrl;
     }
 
-    if (recipe.isReady) {
+    if (activeSidebarMode === "meal") {
+      matchLabel.className = "match-label ready";
+      matchLabel.textContent = activeDay.short;
+    } else if (activeFilter === "guided") {
+      matchLabel.className = "match-label ready";
+      matchLabel.textContent = "Guided";
+    } else if (recipe.isReady) {
       matchLabel.className = "match-label ready";
       matchLabel.textContent = "Ready";
     } else if (recipe.isClose) {
@@ -633,6 +1361,35 @@ function renderRecipeCards(matches) {
 }
 
 function renderSummary(matches) {
+  if (activeSidebarMode === "meal") {
+    const day = mealDays.find((item) => item.key === activeMealDay);
+    const weekRecipeCount = plannedRecipeIdsForWeek().length;
+    const totalIngredients = mealPlanIngredientTotals().length;
+
+    readyCount.textContent = plannedRecipesForDay(activeMealDay).length;
+    closeCount.textContent = weekRecipeCount;
+    ingredientCount.textContent = totalIngredients;
+    recipeCount.textContent = tgbRecipes.length;
+    readyLabel.textContent = `${day.short} dinners`;
+    closeLabel.textContent = "week dinners";
+    ingredientLabel.textContent = "plan ingredients";
+    recipeLabel.textContent = "TGB recipes";
+    resultsTitle.textContent = "Meal Plan";
+    if (activeMealRightView === "summary") {
+      resultNote.textContent = "Reviewing the current week plus the previous 12 weeks.";
+      matchHeadline.textContent = "13-week dinner history";
+    } else if (activeMealRightView === "shopping") {
+      resultNote.textContent = `Shopping list for ${formatWeekLabel(activeMealWeek)}.`;
+      matchHeadline.textContent = "Weekly shopping list";
+    } else {
+      resultNote.textContent = matches.length
+        ? `Showing ${day.label}'s planned dinner recipe${matches.length === 1 ? "" : "s"}.`
+        : `No recipes planned for ${day.label} yet.`;
+      matchHeadline.textContent = `${day.label} dinner plan`;
+    }
+    return;
+  }
+
   const ready = matches.filter((recipe) => recipe.isReady).length;
   const close = matches.filter((recipe) => recipe.isClose).length;
 
@@ -640,6 +1397,18 @@ function renderSummary(matches) {
   closeCount.textContent = close;
   ingredientCount.textContent = ingredients.length;
   recipeCount.textContent = tgbRecipes.length;
+  readyLabel.textContent = "ready now";
+  closeLabel.textContent = "almost ready";
+  ingredientLabel.textContent = "ingredients listed";
+  recipeLabel.textContent = "TGB recipes";
+  resultsTitle.textContent = "Matches";
+
+  if (activeFilter === "guided") {
+    resultNote.textContent =
+      "Showing dinner-friendly recipes with ingredients aligned to Eat to Beat Disease themes.";
+    matchHeadline.textContent = "Guided recipe ideas";
+    return;
+  }
 
   if (!ingredients.length) {
     resultNote.textContent = `Loaded ${tgbRecipes.length} ${recipeSourceLabel} recipes. Add ingredients to see your best options first.`;
@@ -664,11 +1433,24 @@ function renderSummary(matches) {
 }
 
 function render() {
-  const matches = getMatches();
+  const isMealMode = activeSidebarMode === "meal";
+  const matches = isMealMode ? getMealPlanMatches() : getMatches();
+  searchPanel.classList.toggle("hidden", isMealMode);
+  mealPlanPanel.classList.toggle("hidden", !isMealMode);
+  document.querySelectorAll(".sidebar-mode").forEach((button) => {
+    button.classList.toggle("active", button.dataset.sidebarMode === activeSidebarMode);
+  });
   renderIngredientChips();
   renderQuickIngredients();
+  renderMealPlanPanel();
   renderSummary(matches);
-  renderRecipeCards(matches);
+  if (isMealMode && activeMealRightView === "summary") {
+    renderMealSummaryCards();
+  } else if (isMealMode && activeMealRightView === "shopping") {
+    renderShoppingList();
+  } else {
+    renderRecipeCards(matches);
+  }
 }
 
 ingredientForm.addEventListener("submit", (event) => {
@@ -683,6 +1465,50 @@ ingredientForm.addEventListener("submit", (event) => {
 clearIngredientsButton.addEventListener("click", () => {
   ingredients = [];
   saveState();
+  render();
+});
+
+document.querySelectorAll(".sidebar-mode").forEach((button) => {
+  button.addEventListener("click", () => {
+    activeSidebarMode = button.dataset.sidebarMode;
+    render();
+  });
+});
+
+mealPlanAddForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const recipe = findRecipeByTitle(mealRecipeInput.value);
+  if (!recipe) {
+    setMealPlanStatus("Choose a recipe title from the list.", "warning");
+    mealRecipeInput.focus();
+    return;
+  }
+
+  addRecipeToMealDay(activeMealDay, recipe);
+  mealRecipeInput.value = "";
+  mealRecipeInput.focus();
+});
+
+mealWeekInput.addEventListener("change", () => {
+  if (!mealWeekInput.value) return;
+  activeMealWeek = mealWeekInput.value;
+  currentMealPlan();
+  saveState();
+  render();
+});
+
+mealDayViewButton.addEventListener("click", () => {
+  activeMealRightView = "day";
+  render();
+});
+
+mealShoppingViewButton.addEventListener("click", () => {
+  activeMealRightView = "shopping";
+  render();
+});
+
+mealSummaryViewButton.addEventListener("click", () => {
+  activeMealRightView = "summary";
   render();
 });
 

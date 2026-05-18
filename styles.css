@@ -132,6 +132,39 @@ h1 {
   box-shadow: 0 8px 20px rgba(27, 42, 35, 0.06);
 }
 
+.hidden {
+  display: none !important;
+}
+
+.sidebar-panel-set {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.sidebar-mode-switch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  padding: 4px;
+}
+
+.sidebar-mode {
+  min-height: 36px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 900;
+}
+
+.sidebar-mode.active {
+  background: var(--accent);
+  color: #121611;
+}
+
 .panel-heading {
   display: flex;
   align-items: center;
@@ -276,6 +309,142 @@ svg {
   cursor: default;
 }
 
+.meal-view-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  margin: 12px 0 14px;
+}
+
+.meal-view-button {
+  min-height: 34px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-soft);
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 900;
+}
+
+.meal-view-button.active {
+  border-color: var(--accent);
+  background: rgba(165, 189, 120, 0.2);
+  color: #d9e9b8;
+}
+
+.day-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 5px;
+  margin-bottom: 14px;
+}
+
+.day-button {
+  min-width: 0;
+  min-height: 34px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-soft);
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.day-button.active {
+  border-color: var(--accent);
+  background: rgba(165, 189, 120, 0.2);
+  color: #d9e9b8;
+}
+
+.meal-plan-form {
+  display: grid;
+  gap: 10px;
+}
+
+.planned-day-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.week-plan-list {
+  display: grid;
+  gap: 7px;
+  margin-top: 14px;
+}
+
+.week-plan-row {
+  display: grid;
+  grid-template-columns: 44px 1fr;
+  align-items: start;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(165, 189, 120, 0.07);
+  padding: 9px 10px;
+  color: var(--ink);
+  text-align: left;
+}
+
+.week-plan-row.active {
+  border-color: var(--accent);
+  background: rgba(165, 189, 120, 0.14);
+}
+
+.week-plan-day {
+  color: var(--accent-strong);
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.week-plan-titles {
+  color: var(--ink);
+  font-size: 0.86rem;
+  line-height: 1.3;
+}
+
+.planned-recipe-row {
+  display: grid;
+  grid-template-columns: 1fr 28px;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(165, 189, 120, 0.08);
+  padding: 8px 8px 8px 10px;
+  color: var(--ink);
+  font-size: 0.9rem;
+  line-height: 1.25;
+}
+
+.planned-recipe-row button {
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(244, 239, 227, 0.13);
+  color: var(--ink);
+  padding: 0;
+}
+
+.meal-ingredient-list {
+  max-height: 320px;
+  overflow: auto;
+  margin: 0;
+  padding-left: 18px;
+}
+
+.meal-ingredient-list li {
+  margin-bottom: 7px;
+  color: var(--ink);
+  font-size: 0.9rem;
+}
+
 .recipe-form {
   display: grid;
   gap: 10px;
@@ -357,7 +526,7 @@ svg {
 
 .segmented-control {
   display: inline-grid;
-  grid-template-columns: repeat(3, minmax(64px, 1fr));
+  grid-template-columns: repeat(4, minmax(64px, 1fr));
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--surface);
@@ -690,6 +859,30 @@ li {
   font-size: 0.9rem;
 }
 
+.plan-controls {
+  display: grid;
+  grid-template-columns: minmax(82px, 0.55fr) 1fr;
+  gap: 8px;
+  margin: 0 0 12px;
+}
+
+.plan-day-select,
+.plan-add-button {
+  min-height: 34px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-soft);
+  color: var(--ink);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.plan-add-button {
+  border-color: rgba(165, 189, 120, 0.38);
+  background: rgba(165, 189, 120, 0.12);
+  color: #d9e9b8;
+}
+
 .steps {
   margin: auto 0 0;
   border-top: 1px solid var(--line);
@@ -761,6 +954,110 @@ li {
 
 .result-cap {
   padding: 22px;
+}
+
+.shopping-list-view {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 14px;
+}
+
+.shopping-sort {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.shopping-sort-button {
+  min-height: 38px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--muted);
+  font-weight: 900;
+}
+
+.shopping-sort-button.active {
+  border-color: var(--accent);
+  background: rgba(165, 189, 120, 0.16);
+  color: #d9e9b8;
+}
+
+.shopping-group {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  padding: 14px;
+}
+
+.shopping-group h3 {
+  margin-bottom: 10px;
+  font-size: 1rem;
+}
+
+.shopping-check-item {
+  display: grid;
+  grid-template-columns: 24px 1fr;
+  align-items: start;
+  gap: 10px;
+  min-height: 38px;
+  border-top: 1px solid rgba(61, 73, 56, 0.56);
+  padding: 9px 0;
+  color: var(--ink);
+  line-height: 1.32;
+}
+
+.shopping-check-item input {
+  width: 18px;
+  min-height: 18px;
+  margin: 1px 0 0;
+  accent-color: var(--accent);
+}
+
+.shopping-check-item input:checked + span {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+
+.meal-summary-card {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  padding: 18px;
+  box-shadow: 0 10px 24px rgba(27, 42, 35, 0.07);
+}
+
+.meal-summary-card h3 {
+  margin-bottom: 13px;
+  font-size: 1rem;
+  line-height: 1.2;
+}
+
+.meal-summary-days {
+  display: grid;
+  gap: 8px;
+}
+
+.meal-summary-day {
+  display: grid;
+  grid-template-columns: 44px 1fr;
+  gap: 10px;
+  border-top: 1px solid rgba(61, 73, 56, 0.7);
+  padding-top: 8px;
+}
+
+.meal-summary-day span {
+  color: var(--accent-strong);
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.meal-summary-day p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.35;
 }
 
 @media (max-width: 980px) {

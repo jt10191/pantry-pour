@@ -20,6 +20,12 @@
           </div>
         </div>
 
+        <div class="sidebar-mode-switch" aria-label="Workspace mode">
+          <button class="sidebar-mode active" type="button" data-sidebar-mode="search">Search</button>
+          <button class="sidebar-mode" type="button" data-sidebar-mode="meal">Meal Plan</button>
+        </div>
+
+        <div class="sidebar-panel-set" id="searchPanel">
         <section class="panel">
           <div class="panel-heading">
             <h2>Your Ingredients</h2>
@@ -102,6 +108,44 @@
             <p class="form-status" id="recipeFormStatus" aria-live="polite"></p>
           </form>
         </section>
+        </div>
+
+        <div class="sidebar-panel-set hidden" id="mealPlanPanel">
+          <section class="panel">
+            <div class="panel-heading">
+              <h2>Meal Plan</h2>
+            </div>
+            <label for="mealWeekInput">Week</label>
+            <input id="mealWeekInput" type="week" />
+            <div class="meal-view-actions" aria-label="Meal plan view">
+              <button class="meal-view-button active" id="mealDayViewButton" type="button">Selected day</button>
+              <button class="meal-view-button" id="mealShoppingViewButton" type="button">Shopping list</button>
+              <button class="meal-view-button" id="mealSummaryViewButton" type="button">13-week summary</button>
+            </div>
+            <form class="meal-plan-form" id="mealPlanAddForm">
+              <label for="mealRecipeInput">Add recipe title</label>
+              <div class="input-row">
+                <input id="mealRecipeInput" list="recipeTitleOptions" type="text" placeholder="Start typing a recipe title" autocomplete="off" />
+                <button class="primary-icon-button" type="submit" aria-label="Add recipe to selected day" title="Add recipe to selected day">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M12 5v14" />
+                    <path d="M5 12h14" />
+                  </svg>
+                </button>
+              </div>
+              <datalist id="recipeTitleOptions"></datalist>
+            </form>
+            <p class="form-status" id="mealPlanStatus" aria-live="polite"></p>
+            <div class="week-plan-list" id="weekPlanRows" aria-live="polite"></div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-heading">
+              <h2>Plan Ingredients</h2>
+            </div>
+            <ul class="meal-ingredient-list" id="mealPlanIngredients"></ul>
+          </section>
+        </div>
       </aside>
 
       <main class="main-view">
@@ -115,6 +159,7 @@
               <button class="segment active" type="button" data-filter="all">All</button>
               <button class="segment" type="button" data-filter="food">Food</button>
               <button class="segment" type="button" data-filter="drink">Drinks</button>
+              <button class="segment" type="button" data-filter="guided">Guided</button>
             </div>
             <label class="search-box" for="recipeSearch">
               <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -130,19 +175,19 @@
           <div class="summary-card">
             <div>
               <span class="metric" id="readyCount">0</span>
-              <p>ready now</p>
+              <p id="readyLabel">ready now</p>
             </div>
             <div>
               <span class="metric" id="closeCount">0</span>
-              <p>almost ready</p>
+              <p id="closeLabel">almost ready</p>
             </div>
             <div>
               <span class="metric" id="ingredientCount">0</span>
-              <p>ingredients listed</p>
+              <p id="ingredientLabel">ingredients listed</p>
             </div>
             <div>
               <span class="metric" id="recipeCount">0</span>
-              <p>TGB recipes</p>
+              <p id="recipeLabel">TGB recipes</p>
             </div>
           </div>
           <div class="still-life" aria-hidden="true">
@@ -155,7 +200,7 @@
 
         <section class="results-section" aria-live="polite">
           <div class="section-title">
-            <h2>Matches</h2>
+            <h2 id="resultsTitle">Matches</h2>
             <p id="resultNote">Add ingredients to see your best options first.</p>
           </div>
           <div class="recipe-grid" id="recipeGrid"></div>
@@ -193,6 +238,10 @@
           <span></span>
         </div>
         <ul class="ingredient-list"></ul>
+        <div class="plan-controls">
+          <select class="plan-day-select" aria-label="Meal plan day"></select>
+          <button class="plan-add-button" type="button">Add to plan</button>
+        </div>
         <a class="source-link" href="#" target="_blank" rel="noreferrer">Instructions</a>
         <p class="steps"></p>
         <button class="instructions-toggle" type="button">Show more</button>
